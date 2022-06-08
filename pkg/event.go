@@ -1,5 +1,7 @@
 package pkg
 
+import "github.com/google/uuid"
+
 type Event struct {
 	Type    EventType
 	Player  *Player
@@ -15,6 +17,7 @@ const (
 	MatchConfirmed EventType = "match_confirmed"
 	MatchDeclined  EventType = "match_declined"
 	CreateGame     EventType = "create_game"
+	CardDiscarded  EventType = "card_discarded"
 )
 
 type Response struct {
@@ -30,4 +33,15 @@ const (
 	ConfirmMatch     ResponseType = "confirm_match"
 	MatchCanceled    ResponseType = "match_canceled"
 	WaitOtherPlayers ResponseType = "wait_other_players"
+	StartingHand     ResponseType = "starting_hand"
 )
+
+type StartingHandPayload struct {
+	GameId uuid.UUID
+	Hand   *Hand
+}
+
+type CardDiscardedPayload struct {
+	GameId uuid.UUID
+	Card   uuid.UUID
+}
