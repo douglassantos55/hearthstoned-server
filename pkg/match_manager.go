@@ -10,8 +10,8 @@ import (
 type MatchManager struct {
 	mutex     *sync.Mutex
 	timeout   time.Duration
-	matches   map[uuid.UUID][]*Player
-	confirmed map[uuid.UUID][]*Player
+	matches   map[uuid.UUID][]*Socket
+	confirmed map[uuid.UUID][]*Socket
 
 	StopTimer chan uuid.UUID
 }
@@ -20,8 +20,8 @@ func NewMatchManager(timeout time.Duration) *MatchManager {
 	return &MatchManager{
 		timeout:   timeout,
 		mutex:     new(sync.Mutex),
-		matches:   make(map[uuid.UUID][]*Player),
-		confirmed: make(map[uuid.UUID][]*Player),
+		matches:   make(map[uuid.UUID][]*Socket),
+		confirmed: make(map[uuid.UUID][]*Socket),
 
 		StopTimer: make(chan uuid.UUID),
 	}
@@ -50,7 +50,7 @@ func WaitOtherPlayersMessage() Response {
 func (m *MatchManager) Process(event Event) *Event {
 	switch event.Type {
 	case CreateMatch:
-		players := event.Payload.([]*Player)
+		players := event.Payload.([]*Socket)
 		if len(players) == NUM_OF_PLAYERS {
 			m.CreateMatch(players)
 		}
@@ -66,7 +66,7 @@ func (m *MatchManager) Process(event Event) *Event {
 	return nil
 }
 
-func (m *MatchManager) CreateMatch(players []*Player) {
+func (m *MatchManager) CreateMatch(players []*Socket) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -116,7 +116,7 @@ func (m *MatchManager) CancelMatch(matchId uuid.UUID) {
 	}
 }
 
-func (m *MatchManager) ConfirmMatch(matchId uuid.UUID, player *Player) *Event {
+func (m *MatchManager) ConfirmMatch(matchId uuid.UUID, player *Socket) *Event {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 

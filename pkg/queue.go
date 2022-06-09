@@ -4,17 +4,17 @@ import "container/list"
 
 type Queue struct {
 	head    *list.List
-	players map[*Player]*list.Element
+	players map[*Socket]*list.Element
 }
 
 func NewQueue() *Queue {
 	return &Queue{
 		head:    list.New(),
-		players: make(map[*Player]*list.Element),
+		players: make(map[*Socket]*list.Element),
 	}
 }
 
-func (q *Queue) Queue(player *Player) {
+func (q *Queue) Queue(player *Socket) {
 	_, ok := q.players[player]
 	if !ok {
 		element := q.head.PushBack(player)
@@ -22,17 +22,17 @@ func (q *Queue) Queue(player *Player) {
 	}
 }
 
-func (q *Queue) Dequeue() *Player {
+func (q *Queue) Dequeue() *Socket {
 	element := q.head.Front()
 	if element == nil {
 		return nil
 	}
-	player := q.head.Remove(element).(*Player)
+	player := q.head.Remove(element).(*Socket)
 	delete(q.players, player)
 	return player
 }
 
-func (q *Queue) Remove(player *Player) {
+func (q *Queue) Remove(player *Socket) {
 	element, ok := q.players[player]
 	if ok {
 		q.head.Remove(element)

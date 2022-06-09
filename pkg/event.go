@@ -4,7 +4,7 @@ import "github.com/google/uuid"
 
 type Event struct {
 	Type    EventType
-	Player  *Player
+	Player  *Socket
 	Payload interface{}
 }
 
@@ -34,6 +34,8 @@ const (
 	MatchCanceled    ResponseType = "match_canceled"
 	WaitOtherPlayers ResponseType = "wait_other_players"
 	StartingHand     ResponseType = "starting_hand"
+	StartTurn        ResponseType = "start_turn"
+	WaitTurn         ResponseType = "wait_turn"
 )
 
 type StartingHandPayload struct {
@@ -44,4 +46,9 @@ type StartingHandPayload struct {
 type CardDiscardedPayload struct {
 	GameId uuid.UUID
 	Card   uuid.UUID
+}
+
+type TurnPayload struct {
+	GameId uuid.UUID
+	Mana   int
 }

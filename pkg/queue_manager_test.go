@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-func QueueUpEvent(player *Player) Event {
+func QueueUpEvent(player *Socket) Event {
 	return Event{
 		Type:   QueueUp,
 		Player: player,
 	}
 }
 
-func DequeueEvent(player *Player) Event {
+func DequeueEvent(player *Socket) Event {
 	return Event{
 		Type:   Dequeue,
 		Player: player,
@@ -20,7 +20,7 @@ func DequeueEvent(player *Player) Event {
 }
 
 func TestQueuesPlayer(t *testing.T) {
-	player := NewPlayer()
+	player := NewSocket()
 	manager := NewQueueManager()
 
 	// process a queue up event
@@ -44,7 +44,7 @@ func TestQueuesPlayer(t *testing.T) {
 }
 
 func TestIgnoresOtherEvents(t *testing.T) {
-	player := NewPlayer()
+	player := NewSocket()
 	manager := NewQueueManager()
 
 	// process an invalid event type
@@ -67,8 +67,8 @@ func TestMatchFound(t *testing.T) {
 	manager := NewQueueManager()
 
 	// queue two players
-	manager.Process(QueueUpEvent(NewPlayer()))
-	event := manager.Process(QueueUpEvent(NewPlayer()))
+	manager.Process(QueueUpEvent(NewSocket()))
+	event := manager.Process(QueueUpEvent(NewSocket()))
 
 	// expect create match event from manager
 	if event.Type != CreateMatch {
@@ -76,7 +76,7 @@ func TestMatchFound(t *testing.T) {
 	}
 
 	// expected create match event to have players
-	players := event.Payload.([]*Player)
+	players := event.Payload.([]*Socket)
 	if len(players) != NUM_OF_PLAYERS {
 		t.Errorf("Expected %v, got %v", NUM_OF_PLAYERS, len(players))
 	}
@@ -89,7 +89,7 @@ func TestMatchFound(t *testing.T) {
 }
 
 func TestDequeuesPlayer(t *testing.T) {
-	player := NewPlayer()
+	player := NewSocket()
 	manager := NewQueueManager()
 
 	// queue a player

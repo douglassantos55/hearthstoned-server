@@ -7,7 +7,8 @@ import (
 )
 
 type Card struct {
-	Id     uuid.UUID
+	Id uuid.UUID
+
 	Damage int
 	Health int
 }

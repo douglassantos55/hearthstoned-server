@@ -1,6 +1,10 @@
 package pkg
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type GameManager struct {
 	games map[uuid.UUID]*Game
@@ -15,8 +19,9 @@ func NewGameManager() *GameManager {
 func (g *GameManager) Process(event Event) *Event {
 	switch event.Type {
 	case CreateGame:
-		players := event.Payload.([]*Player)
-		g.CreateGame(players)
+		players := event.Payload.([]*Socket)
+		game := g.CreateGame(players)
+		game.ChooseStartingHand(30 * time.Second)
 	case CardDiscarded:
 		payload := event.Payload.(CardDiscardedPayload)
 		game, ok := g.games[payload.GameId]
@@ -28,13 +33,11 @@ func (g *GameManager) Process(event Event) *Event {
 	return nil
 }
 
-func (g *GameManager) CreateGame(players []*Player) {
-	// create a game
+func (g *GameManager) CreateGame(players []*Socket) *Game {
 	game := NewGame(players)
-	// store it
 	g.games[game.Id] = game
-	// start it
-	game.Start()
+
+	return game
 }
 
 func (g *GameManager) GameCount() int {

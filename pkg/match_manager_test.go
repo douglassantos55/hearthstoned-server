@@ -7,14 +7,14 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateMatchEvent(players []*Player) Event {
+func CreateMatchEvent(players []*Socket) Event {
 	return Event{
 		Type:    CreateMatch,
 		Payload: players,
 	}
 }
 
-func MatchConfirmedEvent(player *Player, matchId uuid.UUID) Event {
+func MatchConfirmedEvent(player *Socket, matchId uuid.UUID) Event {
 	return Event{
 		Type:    MatchConfirmed,
 		Player:  player,
@@ -22,7 +22,7 @@ func MatchConfirmedEvent(player *Player, matchId uuid.UUID) Event {
 	}
 }
 
-func MatchDeclinedEvent(player *Player, matchId uuid.UUID) Event {
+func MatchDeclinedEvent(player *Socket, matchId uuid.UUID) Event {
 	return Event{
 		Type:    MatchDeclined,
 		Player:  player,
@@ -31,12 +31,12 @@ func MatchDeclinedEvent(player *Player, matchId uuid.UUID) Event {
 }
 
 func TestCreatesMatch(t *testing.T) {
-	p1 := NewPlayer()
-	p2 := NewPlayer()
+	p1 := NewSocket()
+	p2 := NewSocket()
 
 	manager := NewMatchManager(2 * time.Second)
 
-	manager.Process(CreateMatchEvent([]*Player{p1, p2}))
+	manager.Process(CreateMatchEvent([]*Socket{p1, p2}))
 
 	if manager.MatchCount() != 1 {
 		t.Errorf("Expected %v, got %v", 1, manager.MatchCount())
@@ -70,13 +70,13 @@ func TestCreatesMatch(t *testing.T) {
 }
 
 func TestTimeout(t *testing.T) {
-	p1 := NewPlayer()
-	p2 := NewPlayer()
+	p1 := NewSocket()
+	p2 := NewSocket()
 
 	manager := NewMatchManager(100 * time.Millisecond)
 
 	// create a match
-	manager.CreateMatch([]*Player{p1, p2})
+	manager.CreateMatch([]*Socket{p1, p2})
 
 	<-p1.Outgoing // confirm_match
 	<-p2.Outgoing // confirm_match
@@ -118,12 +118,12 @@ func TestTimeout(t *testing.T) {
 }
 
 func TestStartGame(t *testing.T) {
-	p1 := NewPlayer()
-	p2 := NewPlayer()
+	p1 := NewSocket()
+	p2 := NewSocket()
 	manager := NewMatchManager(100 * time.Millisecond)
 
 	// create a match
-	manager.CreateMatch([]*Player{p1, p2})
+	manager.CreateMatch([]*Socket{p1, p2})
 
 	response := <-p1.Outgoing
 	<-p2.Outgoing
@@ -165,11 +165,11 @@ func TestStartGame(t *testing.T) {
 func TestDeclineMatch(t *testing.T) {
 	manager := NewMatchManager(time.Second)
 
-	p1 := NewPlayer()
-	p2 := NewPlayer()
+	p1 := NewSocket()
+	p2 := NewSocket()
 
 	// create a match
-	manager.CreateMatch([]*Player{p1, p2})
+	manager.CreateMatch([]*Socket{p1, p2})
 
 	response := <-p1.Outgoing // confirm match
 	<-p2.Outgoing             // confirm match

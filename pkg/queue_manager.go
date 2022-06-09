@@ -39,7 +39,7 @@ func (q *QueueManager) Process(event Event) *Event {
 	return nil
 }
 
-func (q *QueueManager) AddToQueue(player *Player) {
+func (q *QueueManager) AddToQueue(player *Socket) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 
@@ -47,7 +47,7 @@ func (q *QueueManager) AddToQueue(player *Player) {
 	go player.Send(WaitForMatchMessage())
 }
 
-func (q *QueueManager) RemoveFromQueue(player *Player) {
+func (q *QueueManager) RemoveFromQueue(player *Socket) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 
@@ -56,7 +56,7 @@ func (q *QueueManager) RemoveFromQueue(player *Player) {
 }
 
 func (q *QueueManager) PrepareMatch() Event {
-	players := make([]*Player, NUM_OF_PLAYERS)
+	players := make([]*Socket, NUM_OF_PLAYERS)
 	for i := 0; i < NUM_OF_PLAYERS; i++ {
 		players[i] = q.queue.Dequeue()
 	}

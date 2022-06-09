@@ -7,14 +7,14 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateGameEvent(players []*Player) Event {
+func CreateGameEvent(players []*Socket) Event {
 	return Event{
 		Type:    CreateGame,
 		Payload: players,
 	}
 }
 
-func DiscardCardEvent(player *Player, cardId, gameId uuid.UUID) Event {
+func DiscardCardEvent(player *Socket, cardId, gameId uuid.UUID) Event {
 	return Event{
 		Type:   CardDiscarded,
 		Player: player,
@@ -26,13 +26,13 @@ func DiscardCardEvent(player *Player, cardId, gameId uuid.UUID) Event {
 }
 
 func TestCreateGame(t *testing.T) {
-	p1 := NewPlayer()
-	p2 := NewPlayer()
+	p1 := NewSocket()
+	p2 := NewSocket()
 
 	manager := NewGameManager()
 
 	// process create game event
-	manager.Process(CreateGameEvent([]*Player{p1, p2}))
+	manager.Process(CreateGameEvent([]*Socket{p1, p2}))
 
 	// expect players to receive starting hand response
 	select {
@@ -76,13 +76,13 @@ func TestCreateGame(t *testing.T) {
 }
 
 func TestDiscardStartingHand(t *testing.T) {
-	p1 := NewPlayer()
-	p2 := NewPlayer()
+	p1 := NewSocket()
+	p2 := NewSocket()
 
 	manager := NewGameManager()
 
 	// create game
-	manager.Process(CreateGameEvent([]*Player{p1, p2}))
+	manager.Process(CreateGameEvent([]*Socket{p1, p2}))
 
 	// receive starting hands response
 	response := <-p1.Outgoing
@@ -114,8 +114,59 @@ func TestDiscardStartingHand(t *testing.T) {
 
 	// expect card to be added back to the deck
 	expected := 60 - INITIAL_HAND_LENGTH
-	got := manager.games[payload.GameId].decks[p1].cards.Len()
+	got := manager.games[payload.GameId].players[p1].deck.cards.Len()
 	if got != expected {
 		t.Errorf("Expected %v, got %v", expected, got)
+	}
+}
+
+func TestDiscardTimeout(t *testing.T) {
+	p1 := NewSocket()
+	p2 := NewSocket()
+
+	manager := NewGameManager()
+
+	// create and start game
+	game := manager.CreateGame([]*Socket{p1, p2})
+	game.ChooseStartingHand(100 * time.Millisecond)
+
+	<-p1.Outgoing // starting hand
+	<-p2.Outgoing // starting hand
+
+	// wait for timeout
+	time.Sleep(110 * time.Millisecond)
+
+	// expect turn to start
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Expected turn to start")
+	case response := <-p1.Outgoing:
+		if response.Type != StartTurn {
+			t.Errorf("Expected %v, got %v", StartTurn, response.Type)
+		}
+		payload := response.Payload.(TurnPayload)
+		if payload.GameId != game.Id {
+			t.Errorf("Expected %v, got %v", game.Id, payload.GameId)
+		}
+		if payload.Mana != 1 {
+			t.Errorf("Expected %v, got %v", 1, payload.Mana)
+		}
+	}
+
+	// expect other player to receive wait turn
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Expected wait turn")
+	case response := <-p2.Outgoing:
+		if response.Type != WaitTurn {
+			t.Errorf("Expected %v, got %v", WaitTurn, response.Type)
+		}
+		payload := response.Payload.(TurnPayload)
+		if payload.GameId != game.Id {
+			t.Errorf("Expected %v, got %v", game.Id, payload.GameId)
+		}
+		if payload.Mana != 1 {
+			t.Errorf("Expected %v, got %v", 1, payload.Mana)
+		}
 	}
 }
