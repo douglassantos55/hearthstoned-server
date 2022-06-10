@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mitchellh/mapstructure"
 )
 
 type GameManager struct {
@@ -23,15 +24,37 @@ func (g *GameManager) Process(event Event) *Event {
 		game := g.CreateGame(players)
 		game.ChooseStartingHand(30 * time.Second)
 	case CardDiscarded:
-		payload := event.Payload.(CardDiscardedPayload)
+		var payload CardDiscardedPayload
 
-		if game, ok := g.games[payload.GameId]; ok {
-			game.Discard(payload.Cards, event.Player)
+		if err := mapstructure.Decode(event.Payload, &payload); err == nil {
+			if gameId, err := uuid.Parse(payload.GameId); err == nil {
+				cards := []uuid.UUID{}
+				for _, cardId := range payload.Cards {
+					if uuid, err := uuid.Parse(cardId); err == nil {
+						cards = append(cards, uuid)
+					}
+				}
+				if game, ok := g.games[gameId]; ok {
+					game.Discard(cards, event.Player)
+				}
+			}
 		}
 	case EndTurn:
-		gameId := event.Payload.(uuid.UUID)
-		if game, ok := g.games[gameId]; ok {
-			game.EndTurn()
+		if gameId, err := uuid.Parse(event.Payload.(string)); err == nil {
+			if game, ok := g.games[gameId]; ok {
+				game.EndTurn()
+			}
+		}
+	case PlayCard:
+		var payload PlayCardPayload
+		if err := mapstructure.Decode(event.Payload, &payload); err == nil {
+			if gameId, err := uuid.Parse(payload.GameId); err == nil {
+				if game, ok := g.games[gameId]; ok {
+					if cardId, err := uuid.Parse(payload.CardId); err == nil {
+						game.PlayCard(cardId, event.Player)
+					}
+				}
+			}
 		}
 	}
 	return nil

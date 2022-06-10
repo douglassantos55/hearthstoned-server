@@ -19,6 +19,7 @@ const (
 	CreateGame     EventType = "create_game"
 	CardDiscarded  EventType = "card_discarded"
 	EndTurn        EventType = "end_turn"
+	PlayCard       EventType = "play_card"
 )
 
 type Response struct {
@@ -29,6 +30,7 @@ type Response struct {
 type ResponseType string
 
 const (
+	Error            ResponseType = "error"
 	Success          ResponseType = "success"
 	WaitForMatch     ResponseType = "wait_for_match"
 	ConfirmMatch     ResponseType = "confirm_match"
@@ -37,6 +39,7 @@ const (
 	StartingHand     ResponseType = "starting_hand"
 	StartTurn        ResponseType = "start_turn"
 	WaitTurn         ResponseType = "wait_turn"
+	CardPlayed       ResponseType = "card_played"
 )
 
 type StartingHandPayload struct {
@@ -45,8 +48,8 @@ type StartingHandPayload struct {
 }
 
 type CardDiscardedPayload struct {
-	GameId uuid.UUID
-	Cards  []uuid.UUID
+	GameId string
+	Cards  []string
 }
 
 type TurnPayload struct {
@@ -54,4 +57,9 @@ type TurnPayload struct {
 	Mana        int
 	CardsInHand int
 	Cards       []*Card
+}
+
+type PlayCardPayload struct {
+	GameId string
+	CardId string
 }

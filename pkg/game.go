@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"log"
 	"sync"
 	"time"
 
@@ -89,7 +90,7 @@ func (g *Game) StartTimer(duration time.Duration) {
 		}
 	case <-timer.C:
 		// change game state to avoid discarding again?
-		g.StartTurn(duration)
+		g.StartTurn(g.turnDuration)
 	}
 }
 
@@ -181,4 +182,49 @@ func (g *Game) Discard(cardIds []uuid.UUID, socket *Socket) {
 func (g *Game) EndTurn() {
 	g.StopTimer <- true
 	g.StartTurn(g.turnDuration)
+}
+
+func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
+	if g.sockets[g.current] != socket {
+		log.Fatal("Current player is not the one playing this card")
+	}
+
+	current := g.players[socket]
+
+	// check if card exists on player's hand
+	card := current.hand.Find(cardId)
+	if card == nil {
+		go current.Send(Response{
+			Type:    Error,
+			Payload: "Card not found in hand",
+		})
+		return
+	}
+
+	// check if player has enough mana to play card
+	if current.GetMana() < card.GetMana() {
+		go current.Send(Response{
+			Type:    Error,
+			Payload: "Not enough mana",
+		})
+		return
+	}
+
+	// play card
+	err := current.PlayCard(card)
+	if err != nil {
+		go current.Send(Response{
+			Type:    Error,
+			Payload: err.Error(),
+		})
+		return
+	}
+
+	// return card played to other players
+	for _, player := range g.OtherPlayers() {
+		go player.Send(Response{
+			Type:    CardPlayed,
+			Payload: card,
+		})
+	}
 }

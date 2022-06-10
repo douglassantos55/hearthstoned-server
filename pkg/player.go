@@ -2,14 +2,17 @@ package pkg
 
 import (
 	"container/list"
+	"errors"
 
 	"github.com/google/uuid"
 )
 
 const MAX_MANA = 10
+const MAX_MINIONS = 7
 
 type Player struct {
 	mana   int
+	board  *Board
 	hand   *Hand
 	deck   *Deck
 	socket *Socket
@@ -18,6 +21,7 @@ type Player struct {
 func NewPlayer(socket *Socket) *Player {
 	return &Player{
 		mana:   0,
+		board:  NewBoard(),
 		deck:   NewDeck(),
 		socket: socket,
 		hand:   NewHand(list.New()),
@@ -66,4 +70,44 @@ func (p *Player) GainMana(qty int) {
 
 func (p *Player) GetMana() int {
 	return p.mana
+}
+
+func (p *Player) PlayCard(card *Card) error {
+	// reduce player's current mana
+	p.mana -= card.GetMana()
+
+	// add card to player's board
+	err := p.board.Place(card)
+	if err != nil {
+		return err
+	}
+
+	// TODO: dispatch card played event
+	return nil
+}
+
+func (p *Player) CardsOnBoardCount() int {
+	return p.board.MinionsCount()
+}
+
+type Board struct {
+	minions map[uuid.UUID]*Minion
+}
+
+func NewBoard() *Board {
+	return &Board{
+		minions: make(map[uuid.UUID]*Minion),
+	}
+}
+
+func (b *Board) MinionsCount() int {
+	return len(b.minions)
+}
+
+func (b *Board) Place(card *Card) error {
+	if b.MinionsCount() == MAX_MINIONS {
+		return errors.New("Cannot place minion, board is full")
+	}
+	b.minions[card.Id] = NewMinion(card)
+	return nil
 }

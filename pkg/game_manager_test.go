@@ -14,7 +14,7 @@ func CreateGameEvent(players []*Socket) Event {
 	}
 }
 
-func DiscardCardsEvent(player *Socket, cardIds []uuid.UUID, gameId uuid.UUID) Event {
+func DiscardCardsEvent(player *Socket, cardIds []string, gameId string) Event {
 	return Event{
 		Type:   CardDiscarded,
 		Player: player,
@@ -90,7 +90,11 @@ func TestDiscardStartingHand(t *testing.T) {
 
 	// process discard event on one of the cards
 	discarded := payload.Hand.Get(2)
-	manager.Process(DiscardCardsEvent(p1, []uuid.UUID{discarded.Id}, payload.GameId))
+	manager.Process(DiscardCardsEvent(
+		p1,
+		[]string{discarded.Id.String()},
+		payload.GameId.String(),
+	))
 
 	// expect wait other players response
 	select {
@@ -229,8 +233,8 @@ func TestStartTurnWhenBothReady(t *testing.T) {
 	<-p2.Outgoing // starting hand
 
 	// ready players up without discarding
-	manager.Process(DiscardCardsEvent(p1, []uuid.UUID{}, game.Id))
-	manager.Process(DiscardCardsEvent(p2, []uuid.UUID{}, game.Id))
+	manager.Process(DiscardCardsEvent(p1, []string{}, game.Id.String()))
+	manager.Process(DiscardCardsEvent(p2, []string{}, game.Id.String()))
 
 	<-p1.Outgoing // wait other players
 	<-p2.Outgoing // wait other players
@@ -283,7 +287,7 @@ func TestPassTurn(t *testing.T) {
 
 	manager.Process(Event{
 		Type:    EndTurn,
-		Payload: game.Id,
+		Payload: game.Id.String(),
 		Player:  p1,
 	})
 
@@ -304,4 +308,7 @@ func TestPassTurn(t *testing.T) {
 			t.Errorf("Expected %v, got %v", StartTurn, response.Type)
 		}
 	}
+}
+
+func TestRefillsManaOnTurnStart(t *testing.T) {
 }
