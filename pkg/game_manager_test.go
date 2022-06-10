@@ -14,12 +14,12 @@ func CreateGameEvent(players []*Socket) Event {
 	}
 }
 
-func DiscardCardEvent(player *Socket, cardId, gameId uuid.UUID) Event {
+func DiscardCardsEvent(player *Socket, cardIds []uuid.UUID, gameId uuid.UUID) Event {
 	return Event{
 		Type:   CardDiscarded,
 		Player: player,
 		Payload: CardDiscardedPayload{
-			Card:   cardId,
+			Cards:  cardIds,
 			GameId: gameId,
 		},
 	}
@@ -90,7 +90,7 @@ func TestDiscardStartingHand(t *testing.T) {
 
 	// process discard event on one of the cards
 	discarded := payload.Hand.Get(2)
-	manager.Process(DiscardCardEvent(p1, discarded.Id, payload.GameId))
+	manager.Process(DiscardCardsEvent(p1, []uuid.UUID{discarded.Id}, payload.GameId))
 
 	// expect wait other players response
 	select {
@@ -151,6 +151,12 @@ func TestDiscardTimeout(t *testing.T) {
 		if payload.Mana != 1 {
 			t.Errorf("Expected %v, got %v", 1, payload.Mana)
 		}
+		if payload.CardsInHand != 4 {
+			t.Errorf("expected %v, got %v", 4, payload.CardsInHand)
+		}
+		if len(payload.Cards) != 1 {
+			t.Error("Expected a card")
+		}
 	}
 
 	// expect other player to receive wait turn
@@ -167,6 +173,135 @@ func TestDiscardTimeout(t *testing.T) {
 		}
 		if payload.Mana != 1 {
 			t.Errorf("Expected %v, got %v", 1, payload.Mana)
+		}
+		if payload.CardsInHand != 4 {
+			t.Errorf("expected %v, got %v", 4, payload.CardsInHand)
+		}
+		if len(payload.Cards) != 0 {
+			t.Errorf("Expected no cards, got %+v", payload.Cards)
+		}
+	}
+}
+
+func TestTurnTimer(t *testing.T) {
+	manager := NewGameManager()
+
+	p1 := NewSocket()
+	p2 := NewSocket()
+
+	game := manager.CreateGame([]*Socket{p1, p2})
+	game.StartTurn(100 * time.Millisecond)
+
+	<-p1.Outgoing // start turn
+	<-p2.Outgoing // wait turn
+
+	time.Sleep(100 * time.Millisecond)
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Expected wait turn")
+	case response := <-p1.Outgoing:
+		if response.Type != WaitTurn {
+			t.Errorf("Expected %v, got %v", WaitTurn, response.Type)
+		}
+	}
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Expected start turn")
+	case response := <-p2.Outgoing:
+		if response.Type != StartTurn {
+			t.Errorf("Expected %v, got %v", StartTurn, response.Type)
+		}
+	}
+}
+
+func TestStartTurnWhenBothReady(t *testing.T) {
+	manager := NewGameManager()
+
+	p1 := NewSocket()
+	p2 := NewSocket()
+
+	game := manager.CreateGame([]*Socket{p1, p2})
+	game.ChooseStartingHand(100 * time.Millisecond)
+
+	<-p1.Outgoing // starting hand
+	<-p2.Outgoing // starting hand
+
+	// ready players up without discarding
+	manager.Process(DiscardCardsEvent(p1, []uuid.UUID{}, game.Id))
+	manager.Process(DiscardCardsEvent(p2, []uuid.UUID{}, game.Id))
+
+	<-p1.Outgoing // wait other players
+	<-p2.Outgoing // wait other players
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Expected start turn")
+	case response := <-p1.Outgoing:
+		if response.Type != StartTurn {
+			t.Errorf("Expecetd %v, got %v", StartTurn, response.Type)
+		}
+	}
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Expected wait turn")
+	case response := <-p2.Outgoing:
+		if response.Type != WaitTurn {
+			t.Errorf("Expecetd %v, got %v", WaitTurn, response.Type)
+		}
+	}
+
+	// expect timer to be stopped
+	time.Sleep(100 * time.Millisecond)
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+	case <-p1.Outgoing:
+		t.Error("Should not receive response")
+	}
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+	case <-p2.Outgoing:
+		t.Error("Should not receive response")
+	}
+}
+
+func TestPassTurn(t *testing.T) {
+	manager := NewGameManager()
+
+	p1 := NewSocket()
+	p2 := NewSocket()
+
+	game := manager.CreateGame([]*Socket{p1, p2})
+	game.StartTurn(time.Second)
+
+	<-p1.Outgoing // start turn
+	<-p2.Outgoing // wait turn
+
+	manager.Process(Event{
+		Type:    EndTurn,
+		Payload: game.Id,
+		Player:  p1,
+	})
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("expected wait turn")
+	case response := <-p1.Outgoing:
+		if response.Type != WaitTurn {
+			t.Errorf("Expected %v, got %v", WaitTurn, response.Type)
+		}
+	}
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("expected start turn")
+	case response := <-p2.Outgoing:
+		if response.Type != StartTurn {
+			t.Errorf("Expected %v, got %v", StartTurn, response.Type)
 		}
 	}
 }

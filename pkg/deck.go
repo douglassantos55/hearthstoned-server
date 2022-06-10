@@ -17,7 +17,8 @@ func NewDeck() *Deck {
 	for i := 0; i < 60; i++ {
 		damage := rand.Intn(10)
 		health := rand.Intn(10)
-		cards.PushBack(NewCard(damage, health))
+		card := NewCard(damage+health/2, damage, health)
+		cards.PushBack(card)
 	}
 	return &Deck{cards: cards}
 }

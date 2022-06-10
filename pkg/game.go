@@ -12,9 +12,13 @@ const INITIAL_HAND_LENGTH = 3
 type Game struct {
 	Id uuid.UUID
 
-	current *Player
+	StopTimer    chan bool
+	turnDuration time.Duration
+
+	current int
+	sockets []*Socket
+	ready   []*Player
 	mutex   *sync.Mutex
-	hands   map[*Socket]*Hand
 	players map[*Socket]*Player
 }
 
@@ -32,31 +36,30 @@ func TurnMessage(responseType ResponseType, gameId uuid.UUID, player *Player) Re
 	return Response{
 		Type: responseType,
 		Payload: TurnPayload{
-			GameId: gameId,
-			Mana:   player.GetMana(),
+			GameId:      gameId,
+			Mana:        player.GetMana(),
+			CardsInHand: player.GetHand().Length(),
 		},
 	}
 }
 
-func NewGame(sockets []*Socket) *Game {
-	var current *Player
+func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 	players := make(map[*Socket]*Player)
-
-	for i, socket := range sockets {
+	for _, socket := range sockets {
 		player := NewPlayer(socket)
 		players[socket] = player
-		if i == 0 {
-			current = player
-		}
 	}
 
 	return &Game{
 		Id: uuid.New(),
 
-		current: current,
+		StopTimer:    make(chan bool),
+		turnDuration: turnDuration,
+
+		current: -1,
+		sockets: sockets,
 		players: players,
 		mutex:   new(sync.Mutex),
-		hands:   make(map[*Socket]*Hand),
 	}
 }
 
@@ -70,76 +73,94 @@ func (g *Game) ChooseStartingHand(duration time.Duration) {
 
 		// return starting hand responses to each player
 		go player.Send(StartingHandMessage(g.Id, player.GetHand()))
-
-		// start timer
-		go g.StartTimer(duration)
 	}
+
+	// start timer
+	go g.StartTimer(duration)
 }
 
 func (g *Game) StartTimer(duration time.Duration) {
-	// start a timer
 	timer := time.NewTimer(duration)
 
-	// when it stops, start turns
 	select {
+	case <-g.StopTimer:
+		if !timer.Stop() {
+			<-timer.C
+		}
 	case <-timer.C:
 		// change game state to avoid discarding again?
-		// start turn
-		g.StartTurn()
+		g.StartTurn(duration)
 	}
 }
 
-func (g *Game) StartTurn() {
+func (g *Game) StartTurn(duration time.Duration) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	// update current player?
 	current := g.NextPlayer()
 
-	// draw a new card
-	current.DrawCards(1)
-
-	// gain mana
 	current.GainMana(1)
+	cards := current.DrawCards(1)
 
-	// start timer
+	go g.StartTimer(duration)
 
-	// send start turn to current player
-	go current.Send(TurnMessage(StartTurn, g.Id, current))
+	go current.Send(Response{
+		Type: StartTurn,
+		Payload: TurnPayload{
+			Mana:        current.GetMana(),
+			Cards:       cards,
+			GameId:      g.Id,
+			CardsInHand: current.GetHand().Length(),
+		},
+	})
 
-	// send wait turn to other players
 	for _, player := range g.OtherPlayers() {
-		go player.Send(TurnMessage(WaitTurn, g.Id, current))
+		go player.Send(Response{
+			Type: WaitTurn,
+			Payload: TurnPayload{
+				Mana:        current.GetMana(),
+				GameId:      g.Id,
+				CardsInHand: current.GetHand().Length(),
+			},
+		})
 	}
 }
 
 func (g *Game) NextPlayer() *Player {
-	return g.current
+	g.current++
+	if g.current >= len(g.sockets) {
+		g.current = 0
+	}
+	return g.players[g.sockets[g.current]]
 }
 
 func (g *Game) OtherPlayers() []*Player {
 	players := []*Player{}
-	for _, player := range g.players {
-		if player != g.current {
-			players = append(players, player)
+	for _, socket := range g.sockets {
+		if socket != g.sockets[g.current] {
+			players = append(players, g.players[socket])
 		}
 	}
 	return players
 }
 
-func (g *Game) Discard(cardId uuid.UUID, socket *Socket) {
+func (g *Game) Discard(cardIds []uuid.UUID, socket *Socket) {
 	g.mutex.Lock()
-	defer g.mutex.Unlock()
 
 	if player, ok := g.players[socket]; ok {
-		// remove card from player's hand
-		discarded := player.Discard(cardId)
+		for _, cardId := range cardIds {
+			// remove card from player's hand
+			discarded := player.Discard(cardId)
 
-		// add a new card to hand
-		player.DrawCards(1)
+			// add a new card to hand
+			player.DrawCards(1)
 
-		// add card back to player's deck
-		player.AddToDeck(discarded)
+			// add card back to player's deck
+			player.AddToDeck(discarded)
+		}
+
+		// mark player as ready
+		g.ready = append(g.ready, player)
 
 		// return wait other players response
 		go player.Send(Response{
@@ -147,4 +168,17 @@ func (g *Game) Discard(cardId uuid.UUID, socket *Socket) {
 			Payload: player.GetHand(),
 		})
 	}
+
+	g.mutex.Unlock()
+
+	// if both players are ready, start turns
+	if len(g.ready) == len(g.players) {
+		g.StopTimer <- true
+		g.StartTurn(g.turnDuration)
+	}
+}
+
+func (g *Game) EndTurn() {
+	g.StopTimer <- true
+	g.StartTurn(g.turnDuration)
 }

@@ -18,6 +18,7 @@ const (
 	MatchDeclined  EventType = "match_declined"
 	CreateGame     EventType = "create_game"
 	CardDiscarded  EventType = "card_discarded"
+	EndTurn        EventType = "end_turn"
 )
 
 type Response struct {
@@ -45,10 +46,12 @@ type StartingHandPayload struct {
 
 type CardDiscardedPayload struct {
 	GameId uuid.UUID
-	Card   uuid.UUID
+	Cards  []uuid.UUID
 }
 
 type TurnPayload struct {
-	GameId uuid.UUID
-	Mana   int
+	GameId      uuid.UUID
+	Mana        int
+	CardsInHand int
+	Cards       []*Card
 }

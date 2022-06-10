@@ -9,14 +9,16 @@ import (
 type Card struct {
 	Id uuid.UUID
 
+	Mana   int
 	Damage int
 	Health int
 }
 
-func NewCard(damage, health int) *Card {
+func NewCard(mana, damage, health int) *Card {
 	return &Card{
 		Id: uuid.New(),
 
+		Mana:   mana,
 		Damage: damage,
 		Health: health,
 	}

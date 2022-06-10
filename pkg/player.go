@@ -24,11 +24,17 @@ func NewPlayer(socket *Socket) *Player {
 	}
 }
 
-func (p *Player) DrawCards(qty int) {
+func (p *Player) DrawCards(qty int) []*Card {
+	out := []*Card{}
 	cards := p.deck.Draw(qty)
+
 	for cur := cards.Front(); cur != nil; cur = cur.Next() {
-		p.hand.Add(cur.Value.(*Card))
+		card := cur.Value.(*Card)
+		p.hand.Add(card)
+		out = append(out, card)
 	}
+
+	return out
 }
 
 func (p *Player) Send(message Response) {

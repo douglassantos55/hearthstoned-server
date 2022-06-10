@@ -24,17 +24,21 @@ func (g *GameManager) Process(event Event) *Event {
 		game.ChooseStartingHand(30 * time.Second)
 	case CardDiscarded:
 		payload := event.Payload.(CardDiscardedPayload)
-		game, ok := g.games[payload.GameId]
 
-		if ok {
-			game.Discard(payload.Card, event.Player)
+		if game, ok := g.games[payload.GameId]; ok {
+			game.Discard(payload.Cards, event.Player)
+		}
+	case EndTurn:
+		gameId := event.Payload.(uuid.UUID)
+		if game, ok := g.games[gameId]; ok {
+			game.EndTurn()
 		}
 	}
 	return nil
 }
 
 func (g *GameManager) CreateGame(players []*Socket) *Game {
-	game := NewGame(players)
+	game := NewGame(players, 75*time.Second)
 	g.games[game.Id] = game
 
 	return game

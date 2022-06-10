@@ -104,9 +104,7 @@ func (m *MatchManager) CancelMatch(matchId uuid.UUID) {
 	defer m.mutex.Unlock()
 
 	// find match
-	match, ok := m.matches[matchId]
-
-	if ok {
+	if match, ok := m.matches[matchId]; ok {
 		// send response to players
 		for _, player := range match {
 			go player.Send(MatchCanceledMessage(matchId))
@@ -121,9 +119,7 @@ func (m *MatchManager) ConfirmMatch(matchId uuid.UUID, player *Socket) *Event {
 	defer m.mutex.Unlock()
 
 	// find match
-	match, ok := m.matches[matchId]
-
-	if ok {
+	if match, ok := m.matches[matchId]; ok {
 		// add player as confirmed
 		m.confirmed[matchId] = append(m.confirmed[matchId], player)
 
@@ -151,16 +147,14 @@ func (m *MatchManager) DeclineMatch(matchId uuid.UUID) *Event {
 	m.CancelMatch(matchId)
 
 	// return queue event for confirmed players
-	confirmed, ok := m.confirmed[matchId]
-
-	if !ok {
-		return nil
+	if confirmed, ok := m.confirmed[matchId]; ok {
+		return &Event{
+			Type:   QueueUp,
+			Player: confirmed[0],
+		}
 	}
 
-	return &Event{
-		Type:   QueueUp,
-		Player: confirmed[0],
-	}
+	return nil
 }
 
 func (m *MatchManager) MatchCount() int {
