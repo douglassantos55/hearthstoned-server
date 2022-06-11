@@ -20,6 +20,7 @@ const (
 	CardDiscarded  EventType = "card_discarded"
 	EndTurn        EventType = "end_turn"
 	PlayCard       EventType = "play_card"
+	Attack         EventType = "attack"
 )
 
 type Response struct {
@@ -30,16 +31,18 @@ type Response struct {
 type ResponseType string
 
 const (
-	Error            ResponseType = "error"
-	Success          ResponseType = "success"
-	WaitForMatch     ResponseType = "wait_for_match"
-	ConfirmMatch     ResponseType = "confirm_match"
-	MatchCanceled    ResponseType = "match_canceled"
-	WaitOtherPlayers ResponseType = "wait_other_players"
-	StartingHand     ResponseType = "starting_hand"
-	StartTurn        ResponseType = "start_turn"
-	WaitTurn         ResponseType = "wait_turn"
-	CardPlayed       ResponseType = "card_played"
+	Error             ResponseType = "error"
+	Success           ResponseType = "success"
+	WaitForMatch      ResponseType = "wait_for_match"
+	ConfirmMatch      ResponseType = "confirm_match"
+	MatchCanceled     ResponseType = "match_canceled"
+	WaitOtherPlayers  ResponseType = "wait_other_players"
+	StartingHand      ResponseType = "starting_hand"
+	StartTurn         ResponseType = "start_turn"
+	WaitTurn          ResponseType = "wait_turn"
+	CardPlayed        ResponseType = "card_played"
+	MinionDamageTaken ResponseType = "minion_taken_damage"
+	MinionDestroyed   ResponseType = "minion_destroyed"
 )
 
 type StartingHandPayload struct {
@@ -62,4 +65,10 @@ type TurnPayload struct {
 type PlayCardPayload struct {
 	GameId string
 	CardId string
+}
+
+type CombatPayload struct {
+	GameId   string
+	Attacker string
+	Defender string
 }

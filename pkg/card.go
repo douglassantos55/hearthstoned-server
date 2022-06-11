@@ -121,3 +121,9 @@ func NewMinion(card *Card) *Minion {
 func (m *Minion) GetState() MinionState {
 	return m.state
 }
+
+// Reduces minion health and returns wether it survives or not
+func (m *Minion) RemoveHealth(amount int) bool {
+	m.Health -= amount
+	return m.Health > 0
+}

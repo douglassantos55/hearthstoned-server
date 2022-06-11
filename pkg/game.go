@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"log"
 	"sync"
 	"time"
 
@@ -41,6 +40,20 @@ func TurnMessage(responseType ResponseType, gameId uuid.UUID, player *Player) Re
 			Mana:        player.GetMana(),
 			CardsInHand: player.GetHand().Length(),
 		},
+	}
+}
+
+func DamageTaken(card *Card) Response {
+	return Response{
+		Type:    MinionDamageTaken,
+		Payload: card,
+	}
+}
+
+func MinionDestroyedMessage(card *Card) Response {
+	return Response{
+		Type:    MinionDestroyed,
+		Payload: card,
 	}
 }
 
@@ -186,8 +199,11 @@ func (g *Game) EndTurn() {
 }
 
 func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
 	if g.sockets[g.current] != socket {
-		log.Fatal("Current player is not the one playing this card")
+		return
 	}
 
 	current := g.players[socket]
@@ -228,4 +244,61 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 			Payload: card,
 		})
 	}
+}
+
+func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	current := g.players[socket]
+
+	// check if attacker exists in attacking player's board
+	if attacker, ok := current.board.GetMinion(attackerId); ok {
+		// check if defender exists in defending player's board
+		if defender, player := g.FindMinion(defenderId); defender != nil {
+			// deal damage to defender
+			if survived := defender.RemoveHealth(attacker.Damage); survived {
+				// send damage taken message to players
+				for _, player := range g.players {
+					go player.Send(DamageTaken(defender.Card))
+				}
+
+				// if it survives, counter-attack
+				if !attacker.RemoveHealth(defender.Damage) {
+					// remove from its board
+					current.board.Remove(attacker)
+
+					// send minion destroyed message to players
+					for _, player := range g.players {
+						go player.Send(MinionDestroyedMessage(attacker.Card))
+					}
+				} else {
+					// send damage taken message to players
+					for _, player := range g.players {
+						go player.Send(DamageTaken(attacker.Card))
+					}
+				}
+			} else {
+				// remove from its board
+				player.board.Remove(defender)
+
+				// send minion destroyed message to players
+				for _, player := range g.players {
+					go player.Send(MinionDestroyedMessage(defender.Card))
+				}
+			}
+		}
+	}
+
+	// TODO: dispatch card destroyed event
+}
+
+// Searches for a minion on all players board, except current player
+func (g *Game) FindMinion(minionId uuid.UUID) (*Minion, *Player) {
+	for _, player := range g.OtherPlayers() {
+		if minion, ok := player.board.GetMinion(minionId); ok {
+			return minion, player
+		}
+	}
+	return nil, nil
 }

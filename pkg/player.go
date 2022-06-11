@@ -112,6 +112,15 @@ func (b *Board) MinionsCount() int {
 	return len(b.minions)
 }
 
+func (b *Board) GetMinion(minionId uuid.UUID) (*Minion, bool) {
+	minion, ok := b.minions[minionId]
+	return minion, ok
+}
+
+func (b *Board) Remove(minion *Minion) {
+	delete(b.minions, minion.Id)
+}
+
 func (b *Board) Place(card *Card) error {
 	if b.MinionsCount() == MAX_MINIONS {
 		return errors.New("Cannot place minion, board is full")
