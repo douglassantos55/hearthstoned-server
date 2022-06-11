@@ -52,7 +52,7 @@ func TestPlayCard(t *testing.T) {
 		if response.Type != CardPlayed {
 			t.Errorf("expected %v, got %v", CardPlayed, response.Type)
 		}
-		card := response.Payload.(*Card)
+		card := response.Payload.(*Minion)
 		if card.Id != played.Id {
 			t.Errorf("expected %v, got %v", played.Id, card.Id)
 		}
@@ -65,7 +65,7 @@ func TestPlayCard(t *testing.T) {
 		if response.Type != CardPlayed {
 			t.Errorf("expected %v, got %v", CardPlayed, response.Type)
 		}
-		card := response.Payload.(*Card)
+		card := response.Payload.(*Minion)
 		if card.Id != played.Id {
 			t.Errorf("expected %v, got %v", played.Id, card.Id)
 		}
@@ -187,5 +187,23 @@ func TestFullBoard(t *testing.T) {
 		if err.Error() != "Cannot place minion, board is full" {
 			t.Errorf("expected '%v', got '%v'", "Cannot place minion, board is full", err.Error())
 		}
+	}
+}
+
+func TestMagicCard(t *testing.T) {
+	player := NewPlayer(NewSocket())
+	player.GainMana(1)
+	player.RefillMana()
+
+	// create magic card
+	ability := GainManaAbility(2, player)
+	card := NewSpell(1, ability)
+
+	// play it
+	player.PlayCard(card)
+
+	// expect its ability to execute
+	if player.GetMana() != 1 {
+		t.Errorf("Expected %v mana, got %v", 1, player.GetMana())
 	}
 }

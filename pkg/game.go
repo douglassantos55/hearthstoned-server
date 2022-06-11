@@ -42,14 +42,14 @@ func TurnMessage(responseType ResponseType, gameId uuid.UUID, player *Player) Re
 	}
 }
 
-func DamageTaken(card *Card) Response {
+func DamageTaken(card *Minion) Response {
 	return Response{
 		Type:    MinionDamageTaken,
 		Payload: card,
 	}
 }
 
-func MinionDestroyedMessage(card *Card) Response {
+func MinionDestroyedMessage(card *Minion) Response {
 	return Response{
 		Type:    MinionDestroyed,
 		Payload: card,
@@ -273,7 +273,7 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 }
 
 // Searches for a minion on all players board, except current player
-func (g *Game) FindMinion(minionId uuid.UUID) (*Minion, *Player) {
+func (g *Game) FindMinion(minionId uuid.UUID) (*ActiveMinion, *Player) {
 	for _, player := range g.OtherPlayers() {
 		if minion, ok := player.board.GetMinion(minionId); ok {
 			return minion, player

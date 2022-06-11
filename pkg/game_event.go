@@ -45,10 +45,10 @@ type GameEvent interface {
 }
 
 type DamageEvent struct {
-	minion *Minion
+	minion *ActiveMinion
 }
 
-func NewDamageEvent(minion *Minion) DamageEvent {
+func NewDamageEvent(minion *ActiveMinion) DamageEvent {
 	return DamageEvent{
 		minion,
 	}
@@ -63,10 +63,10 @@ func (d DamageEvent) GetType() GameEventType {
 }
 
 type DestroyedEvent struct {
-	minion *Minion
+	minion *ActiveMinion
 }
 
-func NewDestroyedEvent(minion *Minion) DestroyedEvent {
+func NewDestroyedEvent(minion *ActiveMinion) DestroyedEvent {
 	return DestroyedEvent{
 		minion,
 	}
@@ -81,10 +81,10 @@ func (d DestroyedEvent) GetType() GameEventType {
 }
 
 type CardPlacedEvent struct {
-	card *Card
+	card *Minion
 }
 
-func NewCardPlayedEvent(card *Card) CardPlacedEvent {
+func NewCardPlayedEvent(card *Minion) CardPlacedEvent {
 	return CardPlacedEvent{
 		card,
 	}

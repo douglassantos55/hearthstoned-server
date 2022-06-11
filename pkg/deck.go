@@ -23,18 +23,18 @@ func NewDeck() *Deck {
 	return &Deck{cards: cards}
 }
 
-func (d *Deck) Push(card *Card) {
+func (d *Deck) Push(card *Minion) {
 	if card != nil {
 		d.cards.PushBack(card)
 	}
 }
 
-func (d *Deck) Pop() *Card {
+func (d *Deck) Pop() *Minion {
 	if d.cards.Len() == 0 {
 		return nil
 	}
 	card := d.cards.Remove(d.cards.Front())
-	return card.(*Card)
+	return card.(*Minion)
 }
 
 func (d *Deck) Draw(qty int) *list.List {

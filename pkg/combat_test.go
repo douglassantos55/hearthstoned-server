@@ -65,7 +65,7 @@ func TestAttackEvent(t *testing.T) {
 		if response.Type != MinionDamageTaken {
 			t.Errorf("Expected %v, got %v", MinionDamageTaken, response.Type)
 		}
-		minion := response.Payload.(*Card)
+		minion := response.Payload.(*Minion)
 		if minion.Id != defender.Id {
 			t.Errorf("Expected %v, got %v", defender.Id, minion.Id)
 		}
@@ -81,7 +81,7 @@ func TestAttackEvent(t *testing.T) {
 		if response.Type != MinionDamageTaken {
 			t.Errorf("Expected %v, got %v", MinionDamageTaken, response.Type)
 		}
-		minion := response.Payload.(*Card)
+		minion := response.Payload.(*Minion)
 		if minion.Id != defender.Id {
 			t.Errorf("Expected %v, got %v", defender.Id, minion.Id)
 		}
@@ -97,7 +97,7 @@ func TestAttackEvent(t *testing.T) {
 		if response.Type != MinionDestroyed {
 			t.Errorf("Expected %v, got %v", MinionDestroyed, response.Type)
 		}
-		minion := response.Payload.(*Card)
+		minion := response.Payload.(*Minion)
 		if minion.Id != attacker.Id {
 			t.Errorf("Expected %v, got %v", attacker.Id, minion.Id)
 		}
@@ -110,7 +110,7 @@ func TestAttackEvent(t *testing.T) {
 		if response.Type != MinionDestroyed {
 			t.Errorf("Expected %v, got %v", MinionDestroyed, response.Type)
 		}
-		minion := response.Payload.(*Card)
+		minion := response.Payload.(*Minion)
 		if minion.Id != attacker.Id {
 			t.Errorf("Expected %v, got %v", attacker.Id, minion.Id)
 		}

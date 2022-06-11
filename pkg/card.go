@@ -7,7 +7,58 @@ import (
 	"github.com/google/uuid"
 )
 
-type Card struct {
+type Card interface {
+	GetId() uuid.UUID
+	GetMana() int
+}
+
+type Ability interface {
+	Execute()
+}
+
+type GainMana struct {
+	amount int
+	player *Player
+}
+
+func GainManaAbility(amount int, player *Player) GainMana {
+	return GainMana{
+		amount: amount,
+		player: player,
+	}
+}
+
+func (g GainMana) Execute() {
+	g.player.AddMana(g.amount)
+}
+
+type Spell struct {
+	Id      uuid.UUID
+	Mana    int
+	Ability Ability
+}
+
+func NewSpell(mana int, ability Ability) *Spell {
+	return &Spell{
+		Id:      uuid.New(),
+		Mana:    mana,
+		Ability: ability,
+	}
+}
+
+func (s *Spell) GetId() uuid.UUID {
+	return s.Id
+}
+
+func (s *Spell) GetMana() int {
+	return s.Mana
+}
+
+func (s *Spell) Cast() {
+	s.Ability.Execute()
+}
+
+type Minion struct {
 	Id uuid.UUID
 
 	Mana   int
@@ -15,8 +66,8 @@ type Card struct {
 	Health int
 }
 
-func NewCard(mana, damage, health int) *Card {
-	return &Card{
+func NewCard(mana, damage, health int) *Minion {
+	return &Minion{
 		Id: uuid.New(),
 
 		Mana:   mana,
@@ -25,19 +76,23 @@ func NewCard(mana, damage, health int) *Card {
 	}
 }
 
-func (c *Card) GetMana() int {
+func (c *Minion) GetId() uuid.UUID {
+	return c.Id
+}
+
+func (c *Minion) GetMana() int {
 	return c.Mana
 }
 
 type Hand struct {
-	cards map[uuid.UUID]*Card
+	cards map[uuid.UUID]*Minion
 	mutex *sync.Mutex
 }
 
 func NewHand(items *list.List) *Hand {
-	cards := map[uuid.UUID]*Card{}
+	cards := map[uuid.UUID]*Minion{}
 	for cur := items.Front(); cur != nil; cur = cur.Next() {
-		card := cur.Value.(*Card)
+		card := cur.Value.(*Minion)
 		cards[card.Id] = card
 	}
 	return &Hand{
@@ -46,7 +101,7 @@ func NewHand(items *list.List) *Hand {
 	}
 }
 
-func (h *Hand) Get(index int) *Card {
+func (h *Hand) Get(index int) *Minion {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
@@ -60,21 +115,21 @@ func (h *Hand) Get(index int) *Card {
 	return nil
 }
 
-func (h *Hand) Add(card *Card) {
+func (h *Hand) Add(card *Minion) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
 	h.cards[card.Id] = card
 }
 
-func (h *Hand) Find(cardId uuid.UUID) *Card {
+func (h *Hand) Find(cardId uuid.UUID) *Minion {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
 	return h.cards[cardId]
 }
 
-func (h *Hand) Remove(card *Card) {
+func (h *Hand) Remove(card *Minion) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
@@ -113,38 +168,38 @@ func (e Exhausted) CanCounterAttack() bool {
 	return true
 }
 
-// Minion represents a placed card on board, giving it the
+// ActiveMinion represents a placed card on board, giving it the
 // ability to attack and states
-type Minion struct {
-	*Card
+type ActiveMinion struct {
+	*Minion
 	state MinionState
 }
 
-func NewMinion(card *Card) *Minion {
-	return &Minion{
-		Card:  card,
-		state: Exhausted{},
+func NewMinion(card *Minion) *ActiveMinion {
+	return &ActiveMinion{
+		Minion: card,
+		state:  Exhausted{},
 	}
 }
 
-func (m *Minion) CanAttack() bool {
+func (m *ActiveMinion) CanAttack() bool {
 	return m.state.CanAttack()
 }
 
-func (m *Minion) CanCounterAttack() bool {
+func (m *ActiveMinion) CanCounterAttack() bool {
 	return m.state.CanCounterAttack()
 }
 
-func (m *Minion) GetState() MinionState {
+func (m *ActiveMinion) GetState() MinionState {
 	return m.state
 }
 
-func (m *Minion) SetState(state MinionState) {
+func (m *ActiveMinion) SetState(state MinionState) {
 	m.state = state
 }
 
 // Reduces minion health and returns wether it survives or not
-func (m *Minion) RemoveHealth(amount int) bool {
+func (m *ActiveMinion) RemoveHealth(amount int) bool {
 	m.Health -= amount
 	return m.Health > 0
 }
