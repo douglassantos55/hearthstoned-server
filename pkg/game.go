@@ -121,6 +121,8 @@ func (g *Game) StartTurn() {
 
 	current.GainMana(1)
 	current.RefillMana()
+	current.board.ActivateAll()
+
 	cards := current.DrawCards(1)
 
 	go g.StartTimer(g.turnDuration)
@@ -255,29 +257,34 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 
 	// check if attacker exists in attacking player's board
 	if attacker, ok := current.board.GetMinion(attackerId); ok {
-		// check if defender exists in defending player's board
-		if defender, player := g.FindMinion(defenderId); defender != nil {
-			// deal damage to defender
-			if survived := defender.RemoveHealth(attacker.Damage); survived {
-				go g.dispatcher.Dispatch(NewDamageEvent(defender))
+		if attacker.CanAttack() {
+			// check if defender exists in defending player's board
+			if defender, player := g.FindMinion(defenderId); defender != nil {
+				// deal damage to defender
+				if survived := defender.RemoveHealth(attacker.Damage); survived {
+					go g.dispatcher.Dispatch(NewDamageEvent(defender))
 
-				// if it survives, counter-attack
-				if !attacker.RemoveHealth(defender.Damage) {
+					// if it survives, counter-attack
+					if defender.CanCounterAttack() && !attacker.RemoveHealth(defender.Damage) {
+						// remove from its board
+						current.board.Remove(attacker)
+
+						// send minion destroyed message to players
+						go g.dispatcher.Dispatch(NewDestroyedEvent(attacker))
+					} else {
+						// after attacking, minion gets exhausted
+						attacker.SetState(Exhausted{})
+
+						// send damage taken message to players
+						go g.dispatcher.Dispatch(NewDamageEvent(attacker))
+					}
+				} else {
 					// remove from its board
-					current.board.Remove(attacker)
+					player.board.Remove(defender)
 
 					// send minion destroyed message to players
-					go g.dispatcher.Dispatch(NewDestroyedEvent(attacker))
-				} else {
-					// send damage taken message to players
-					go g.dispatcher.Dispatch(NewDamageEvent(attacker))
+					go g.dispatcher.Dispatch(NewDestroyedEvent(defender))
 				}
-			} else {
-				// remove from its board
-				player.board.Remove(defender)
-
-				// send minion destroyed message to players
-				go g.dispatcher.Dispatch(NewDestroyedEvent(defender))
 			}
 		}
 	}

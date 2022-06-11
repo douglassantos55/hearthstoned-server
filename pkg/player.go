@@ -145,3 +145,9 @@ func (b *Board) Place(card *Card) error {
 	b.minions[card.Id] = NewMinion(card)
 	return nil
 }
+
+func (b *Board) ActivateAll() {
+	for _, minion := range b.minions {
+		minion.SetState(Active{})
+	}
+}

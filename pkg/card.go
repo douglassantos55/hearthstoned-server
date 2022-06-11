@@ -90,6 +90,7 @@ func (h *Hand) Length() int {
 
 type MinionState interface {
 	CanAttack() bool
+	CanCounterAttack() bool
 }
 
 type Active struct{}
@@ -98,10 +99,18 @@ func (e Active) CanAttack() bool {
 	return true
 }
 
+func (e Active) CanCounterAttack() bool {
+	return true
+}
+
 type Exhausted struct{}
 
 func (e Exhausted) CanAttack() bool {
 	return false
+}
+
+func (e Exhausted) CanCounterAttack() bool {
+	return true
 }
 
 // Minion represents a placed card on board, giving it the
@@ -118,8 +127,20 @@ func NewMinion(card *Card) *Minion {
 	}
 }
 
+func (m *Minion) CanAttack() bool {
+	return m.state.CanAttack()
+}
+
+func (m *Minion) CanCounterAttack() bool {
+	return m.state.CanCounterAttack()
+}
+
 func (m *Minion) GetState() MinionState {
 	return m.state
+}
+
+func (m *Minion) SetState(state MinionState) {
+	m.state = state
 }
 
 // Reduces minion health and returns wether it survives or not
