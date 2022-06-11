@@ -67,6 +67,7 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 		dispatcher.Subscribe(MinionDamagedEvent, player.NotifyDamage)
 		dispatcher.Subscribe(MinionDestroyedEvent, player.NotifyDestroyed)
 		dispatcher.Subscribe(CardPlayedEvent, player.NotifyCardPlayed)
+		dispatcher.Subscribe(TurnStartedEvent, player.NotifyTurnStarted)
 	}
 
 	return &Game{
@@ -123,30 +124,11 @@ func (g *Game) StartTurn() {
 	current.RefillMana()
 	current.board.ActivateAll()
 
-	cards := current.DrawCards(1)
+	current.DrawCards(1)
 
 	go g.StartTimer(g.turnDuration)
 
-	go current.Send(Response{
-		Type: StartTurn,
-		Payload: TurnPayload{
-			Mana:        current.GetMana(),
-			Cards:       cards,
-			GameId:      g.Id,
-			CardsInHand: current.GetHand().Length(),
-		},
-	})
-
-	for _, player := range g.OtherPlayers() {
-		go player.Send(Response{
-			Type: WaitTurn,
-			Payload: TurnPayload{
-				Mana:        current.GetMana(),
-				GameId:      g.Id,
-				CardsInHand: current.GetHand().Length(),
-			},
-		})
-	}
+	go g.dispatcher.Dispatch(NewTurnStartedEvent(current))
 }
 
 func (g *Game) NextPlayer() *Player {

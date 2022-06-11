@@ -6,6 +6,7 @@ const (
 	MinionDamagedEvent GameEventType = iota
 	MinionDestroyedEvent
 	CardPlayedEvent
+	TurnStartedEvent
 )
 
 type Listener = func(event GameEvent)
@@ -95,4 +96,22 @@ func (c CardPlacedEvent) GetData() interface{} {
 
 func (c CardPlacedEvent) GetType() GameEventType {
 	return CardPlayedEvent
+}
+
+type TurnStarted struct {
+	player *Player
+}
+
+func NewTurnStartedEvent(player *Player) TurnStarted {
+	return TurnStarted{
+		player: player,
+	}
+}
+
+func (t TurnStarted) GetData() interface{} {
+	return t.player
+}
+
+func (t TurnStarted) GetType() GameEventType {
+	return TurnStartedEvent
 }

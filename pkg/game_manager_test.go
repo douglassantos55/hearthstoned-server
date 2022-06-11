@@ -149,17 +149,14 @@ func TestDiscardTimeout(t *testing.T) {
 			t.Errorf("Expected %v, got %v", StartTurn, response.Type)
 		}
 		payload := response.Payload.(TurnPayload)
-		if payload.GameId != game.Id {
-			t.Errorf("Expected %v, got %v", game.Id, payload.GameId)
-		}
 		if payload.Mana != 1 {
 			t.Errorf("Expected %v, got %v", 1, payload.Mana)
 		}
 		if payload.CardsInHand != 4 {
 			t.Errorf("expected %v, got %v", 4, payload.CardsInHand)
 		}
-		if len(payload.Cards) != 1 {
-			t.Error("Expected a card")
+		if len(payload.Cards) != 4 {
+			t.Errorf("Expected %v cards, got %v", 4, len(payload.Cards))
 		}
 	}
 
@@ -172,9 +169,6 @@ func TestDiscardTimeout(t *testing.T) {
 			t.Errorf("Expected %v, got %v", WaitTurn, response.Type)
 		}
 		payload := response.Payload.(TurnPayload)
-		if payload.GameId != game.Id {
-			t.Errorf("Expected %v, got %v", game.Id, payload.GameId)
-		}
 		if payload.Mana != 1 {
 			t.Errorf("Expected %v, got %v", 1, payload.Mana)
 		}

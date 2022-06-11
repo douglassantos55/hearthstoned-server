@@ -3,6 +3,7 @@ package pkg
 import (
 	"container/list"
 	"errors"
+	"sync"
 
 	"github.com/google/uuid"
 )
@@ -14,6 +15,7 @@ type Player struct {
 	currMana  int
 	totalMana int
 
+	mutex  *sync.Mutex
 	board  *Board
 	hand   *Hand
 	deck   *Deck
@@ -25,6 +27,7 @@ func NewPlayer(socket *Socket) *Player {
 		totalMana: 0,
 		currMana:  0,
 
+		mutex:  new(sync.Mutex),
 		board:  NewBoard(),
 		deck:   NewDeck(),
 		socket: socket,
@@ -66,6 +69,8 @@ func (p *Player) AddToDeck(card *Card) {
 }
 
 func (p *Player) RefillMana() {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	p.currMana = p.totalMana
 }
 
@@ -77,6 +82,8 @@ func (p *Player) GainMana(qty int) {
 }
 
 func (p *Player) GetMana() int {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	return p.currMana
 }
 
@@ -113,6 +120,33 @@ func (p *Player) NotifyCardPlayed(event GameEvent) {
 		Type:    CardPlayed,
 		Payload: card,
 	})
+}
+
+func (p *Player) NotifyTurnStarted(event GameEvent) {
+	player := event.GetData().(*Player)
+	cards := []*Card{}
+	for _, card := range player.hand.cards {
+		cards = append(cards, card)
+	}
+
+	if player == p {
+		go p.Send(Response{
+			Type: StartTurn,
+			Payload: TurnPayload{
+				Cards:       cards,
+				Mana:        player.GetMana(),
+				CardsInHand: player.hand.Length(),
+			},
+		})
+	} else {
+		go p.Send(Response{
+			Type: WaitTurn,
+			Payload: TurnPayload{
+				Mana:        player.GetMana(),
+				CardsInHand: player.hand.Length(),
+			},
+		})
+	}
 }
 
 type Board struct {
