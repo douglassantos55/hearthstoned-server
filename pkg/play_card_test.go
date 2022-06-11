@@ -48,6 +48,19 @@ func TestPlayCard(t *testing.T) {
 	select {
 	case <-time.After(100 * time.Millisecond):
 		t.Error("expected card played")
+	case response := <-p1.Outgoing:
+		if response.Type != CardPlayed {
+			t.Errorf("expected %v, got %v", CardPlayed, response.Type)
+		}
+		card := response.Payload.(*Card)
+		if card.Id != played.Id {
+			t.Errorf("expected %v, got %v", played.Id, card.Id)
+		}
+	}
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Error("expected card played")
 	case response := <-p2.Outgoing:
 		if response.Type != CardPlayed {
 			t.Errorf("expected %v, got %v", CardPlayed, response.Type)

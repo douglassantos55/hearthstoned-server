@@ -90,7 +90,6 @@ func (p *Player) PlayCard(card *Card) error {
 		return err
 	}
 
-	// TODO: dispatch card played event
 	return nil
 }
 
@@ -100,12 +99,20 @@ func (p *Player) CardsOnBoardCount() int {
 
 func (p *Player) NotifyDamage(event GameEvent) {
 	minion := event.GetData().(*Minion)
-	p.Send(DamageTaken(minion.Card))
+	go p.Send(DamageTaken(minion.Card))
 }
 
 func (p *Player) NotifyDestroyed(event GameEvent) {
 	minion := event.GetData().(*Minion)
-	p.Send(MinionDestroyedMessage(minion.Card))
+	go p.Send(MinionDestroyedMessage(minion.Card))
+}
+
+func (p *Player) NotifyCardPlayed(event GameEvent) {
+	card := event.GetData().(*Card)
+	go p.Send(Response{
+		Type:    CardPlayed,
+		Payload: card,
+	})
 }
 
 type Board struct {

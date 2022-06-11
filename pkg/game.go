@@ -9,79 +9,6 @@ import (
 
 const INITIAL_HAND_LENGTH = 3
 
-type GameEventType = string
-
-type GameEvent interface {
-	GetData() interface{}
-	GetType() GameEventType
-}
-
-type Damage struct {
-	minion *Minion
-}
-
-func NewDamageEvent(minion *Minion) Damage {
-	return Damage{
-		minion,
-	}
-}
-
-func (d Damage) GetData() interface{} {
-	return d.minion
-}
-
-func (d Damage) GetType() GameEventType {
-	return "minion_damage"
-}
-
-type Destroyed struct {
-	minion *Minion
-}
-
-func NewDestroyedEvent(minion *Minion) Destroyed {
-	return Destroyed{
-		minion,
-	}
-}
-
-func (d Destroyed) GetData() interface{} {
-	return d.minion
-}
-
-func (d Destroyed) GetType() GameEventType {
-	return "minion_destroyed"
-}
-
-type Listener = func(event GameEvent)
-
-type Dispatcher interface {
-	Dispatch(event GameEvent)
-	Subscribe(event GameEventType, listener Listener)
-}
-
-type GameDispatcher struct {
-	listeners map[GameEventType][]Listener
-}
-
-func NewGameDispatcher() *GameDispatcher {
-	return &GameDispatcher{
-		listeners: make(map[GameEventType][]Listener),
-	}
-}
-
-func (d *GameDispatcher) Subscribe(event GameEventType, listener Listener) {
-	if _, ok := d.listeners[event]; !ok {
-		d.listeners[event] = make([]Listener, 0)
-	}
-	d.listeners[event] = append(d.listeners[event], listener)
-}
-
-func (d *GameDispatcher) Dispatch(event GameEvent) {
-	for _, listener := range d.listeners[event.GetType()] {
-		listener(event)
-	}
-}
-
 type Game struct {
 	Id           uuid.UUID
 	StopTimer    chan bool
@@ -139,6 +66,7 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 
 		dispatcher.Subscribe("minion_damage", player.NotifyDamage)
 		dispatcher.Subscribe("minion_destroyed", player.NotifyDestroyed)
+		dispatcher.Subscribe("card_played", player.NotifyCardPlayed)
 	}
 
 	return &Game{
@@ -315,13 +243,8 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 		return
 	}
 
-	// return card played to other players
-	for _, player := range g.OtherPlayers() {
-		go player.Send(Response{
-			Type:    CardPlayed,
-			Payload: card,
-		})
-	}
+	// dispatch card played event
+	go g.dispatcher.Dispatch(NewCardPlayedEvent(card))
 }
 
 func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
@@ -358,8 +281,6 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 			}
 		}
 	}
-
-	// TODO: dispatch card destroyed event
 }
 
 // Searches for a minion on all players board, except current player

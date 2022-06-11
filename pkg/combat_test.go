@@ -24,6 +24,8 @@ func TestAttackEvent(t *testing.T) {
 	attacker.Health = 1
 
 	game.PlayCard(attacker.Id, p1)
+
+	<-p1.Outgoing // card played
 	<-p2.Outgoing // card played
 
 	game.EndTurn()
@@ -39,6 +41,7 @@ func TestAttackEvent(t *testing.T) {
 
 	game.PlayCard(defender.Id, p2)
 	<-p1.Outgoing // card played
+	<-p2.Outgoing // card played
 
 	game.EndTurn()
 
