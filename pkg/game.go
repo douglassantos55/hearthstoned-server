@@ -9,17 +9,89 @@ import (
 
 const INITIAL_HAND_LENGTH = 3
 
-type Game struct {
-	Id uuid.UUID
+type GameEventType = string
 
+type GameEvent interface {
+	GetData() interface{}
+	GetType() GameEventType
+}
+
+type Damage struct {
+	minion *Minion
+}
+
+func NewDamageEvent(minion *Minion) Damage {
+	return Damage{
+		minion,
+	}
+}
+
+func (d Damage) GetData() interface{} {
+	return d.minion
+}
+
+func (d Damage) GetType() GameEventType {
+	return "minion_damage"
+}
+
+type Destroyed struct {
+	minion *Minion
+}
+
+func NewDestroyedEvent(minion *Minion) Destroyed {
+	return Destroyed{
+		minion,
+	}
+}
+
+func (d Destroyed) GetData() interface{} {
+	return d.minion
+}
+
+func (d Destroyed) GetType() GameEventType {
+	return "minion_destroyed"
+}
+
+type Listener = func(event GameEvent)
+
+type Dispatcher interface {
+	Dispatch(event GameEvent)
+	Subscribe(event GameEventType, listener Listener)
+}
+
+type GameDispatcher struct {
+	listeners map[GameEventType][]Listener
+}
+
+func NewGameDispatcher() *GameDispatcher {
+	return &GameDispatcher{
+		listeners: make(map[GameEventType][]Listener),
+	}
+}
+
+func (d *GameDispatcher) Subscribe(event GameEventType, listener Listener) {
+	if _, ok := d.listeners[event]; !ok {
+		d.listeners[event] = make([]Listener, 0)
+	}
+	d.listeners[event] = append(d.listeners[event], listener)
+}
+
+func (d *GameDispatcher) Dispatch(event GameEvent) {
+	for _, listener := range d.listeners[event.GetType()] {
+		listener(event)
+	}
+}
+
+type Game struct {
+	Id           uuid.UUID
 	StopTimer    chan bool
 	turnDuration time.Duration
-
-	current int
-	sockets []*Socket
-	ready   []*Player
-	mutex   *sync.Mutex
-	players map[*Socket]*Player
+	current      int
+	sockets      []*Socket
+	ready        []*Player
+	mutex        *sync.Mutex
+	players      map[*Socket]*Player
+	dispatcher   Dispatcher
 }
 
 func StartingHandMessage(gameId uuid.UUID, hand *Hand) Response {
@@ -58,10 +130,15 @@ func MinionDestroyedMessage(card *Card) Response {
 }
 
 func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
+	dispatcher := NewGameDispatcher()
+
 	players := make(map[*Socket]*Player)
 	for _, socket := range sockets {
 		player := NewPlayer(socket)
 		players[socket] = player
+
+		dispatcher.Subscribe("minion_damage", player.NotifyDamage)
+		dispatcher.Subscribe("minion_destroyed", player.NotifyDestroyed)
 	}
 
 	return &Game{
@@ -70,10 +147,11 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 		StopTimer:    make(chan bool),
 		turnDuration: turnDuration,
 
-		current: -1,
-		sockets: sockets,
-		players: players,
-		mutex:   new(sync.Mutex),
+		current:    -1,
+		sockets:    sockets,
+		players:    players,
+		mutex:      new(sync.Mutex),
+		dispatcher: dispatcher,
 	}
 }
 
@@ -258,10 +336,7 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 		if defender, player := g.FindMinion(defenderId); defender != nil {
 			// deal damage to defender
 			if survived := defender.RemoveHealth(attacker.Damage); survived {
-				// send damage taken message to players
-				for _, player := range g.players {
-					go player.Send(DamageTaken(defender.Card))
-				}
+				go g.dispatcher.Dispatch(NewDamageEvent(defender))
 
 				// if it survives, counter-attack
 				if !attacker.RemoveHealth(defender.Damage) {
@@ -269,23 +344,17 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 					current.board.Remove(attacker)
 
 					// send minion destroyed message to players
-					for _, player := range g.players {
-						go player.Send(MinionDestroyedMessage(attacker.Card))
-					}
+					go g.dispatcher.Dispatch(NewDestroyedEvent(attacker))
 				} else {
 					// send damage taken message to players
-					for _, player := range g.players {
-						go player.Send(DamageTaken(attacker.Card))
-					}
+					go g.dispatcher.Dispatch(NewDamageEvent(attacker))
 				}
 			} else {
 				// remove from its board
 				player.board.Remove(defender)
 
 				// send minion destroyed message to players
-				for _, player := range g.players {
-					go player.Send(MinionDestroyedMessage(defender.Card))
-				}
+				go g.dispatcher.Dispatch(NewDestroyedEvent(defender))
 			}
 		}
 	}

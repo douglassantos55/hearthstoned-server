@@ -98,6 +98,16 @@ func (p *Player) CardsOnBoardCount() int {
 	return p.board.MinionsCount()
 }
 
+func (p *Player) NotifyDamage(event GameEvent) {
+	minion := event.GetData().(*Minion)
+	p.Send(DamageTaken(minion.Card))
+}
+
+func (p *Player) NotifyDestroyed(event GameEvent) {
+	minion := event.GetData().(*Minion)
+	p.Send(MinionDestroyedMessage(minion.Card))
+}
+
 type Board struct {
 	minions map[uuid.UUID]*Minion
 }
