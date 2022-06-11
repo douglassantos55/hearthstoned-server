@@ -64,9 +64,9 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 		player := NewPlayer(socket)
 		players[socket] = player
 
-		dispatcher.Subscribe("minion_damage", player.NotifyDamage)
-		dispatcher.Subscribe("minion_destroyed", player.NotifyDestroyed)
-		dispatcher.Subscribe("card_played", player.NotifyCardPlayed)
+		dispatcher.Subscribe(MinionDamagedEvent, player.NotifyDamage)
+		dispatcher.Subscribe(MinionDestroyedEvent, player.NotifyDestroyed)
+		dispatcher.Subscribe(CardPlayedEvent, player.NotifyCardPlayed)
 	}
 
 	return &Game{

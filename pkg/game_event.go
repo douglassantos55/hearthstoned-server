@@ -1,6 +1,12 @@
 package pkg
 
-type GameEventType = string
+type GameEventType = int
+
+const (
+	MinionDamagedEvent GameEventType = iota
+	MinionDestroyedEvent
+	CardPlayedEvent
+)
 
 type Listener = func(event GameEvent)
 
@@ -52,7 +58,7 @@ func (d DamageEvent) GetData() interface{} {
 }
 
 func (d DamageEvent) GetType() GameEventType {
-	return "minion_damage"
+	return MinionDamagedEvent
 }
 
 type DestroyedEvent struct {
@@ -70,23 +76,23 @@ func (d DestroyedEvent) GetData() interface{} {
 }
 
 func (d DestroyedEvent) GetType() GameEventType {
-	return "minion_destroyed"
+	return MinionDestroyedEvent
 }
 
-type CardPlayedEvent struct {
+type CardPlacedEvent struct {
 	card *Card
 }
 
-func NewCardPlayedEvent(card *Card) CardPlayedEvent {
-	return CardPlayedEvent{
+func NewCardPlayedEvent(card *Card) CardPlacedEvent {
+	return CardPlacedEvent{
 		card,
 	}
 }
 
-func (c CardPlayedEvent) GetData() interface{} {
+func (c CardPlacedEvent) GetData() interface{} {
 	return c.card
 }
 
-func (c CardPlayedEvent) GetType() GameEventType {
-	return "card_played"
+func (c CardPlacedEvent) GetType() GameEventType {
+	return CardPlayedEvent
 }
