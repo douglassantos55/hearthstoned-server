@@ -11,7 +11,9 @@ const MAX_MANA = 10
 const MAX_MINIONS = 7
 
 type Player struct {
-	mana   int
+	currMana  int
+	totalMana int
+
 	board  *Board
 	hand   *Hand
 	deck   *Deck
@@ -20,7 +22,9 @@ type Player struct {
 
 func NewPlayer(socket *Socket) *Player {
 	return &Player{
-		mana:   0,
+		totalMana: 0,
+		currMana:  0,
+
 		board:  NewBoard(),
 		deck:   NewDeck(),
 		socket: socket,
@@ -61,20 +65,24 @@ func (p *Player) AddToDeck(card *Card) {
 	p.deck.Push(card)
 }
 
+func (p *Player) RefillMana() {
+	p.currMana = p.totalMana
+}
+
 func (p *Player) GainMana(qty int) {
-	p.mana += qty
-	if p.mana > MAX_MANA {
-		p.mana = MAX_MANA
+	p.totalMana += qty
+	if p.totalMana > MAX_MANA {
+		p.totalMana = MAX_MANA
 	}
 }
 
 func (p *Player) GetMana() int {
-	return p.mana
+	return p.currMana
 }
 
 func (p *Player) PlayCard(card *Card) error {
 	// reduce player's current mana
-	p.mana -= card.GetMana()
+	p.currMana -= card.GetMana()
 
 	// add card to player's board
 	err := p.board.Place(card)

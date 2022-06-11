@@ -311,4 +311,28 @@ func TestPassTurn(t *testing.T) {
 }
 
 func TestRefillsManaOnTurnStart(t *testing.T) {
+	p1 := NewSocket()
+	p2 := NewSocket()
+
+	game := NewGame([]*Socket{p1, p2}, time.Second)
+	game.StartTurn(time.Second)
+
+	response := <-p1.Outgoing
+	payload := response.Payload.(TurnPayload)
+
+	// spend some mana
+	payload.Cards[0].Mana = 1
+	game.PlayCard(payload.Cards[0].Id, p1)
+
+	// end turn
+	game.EndTurn()
+
+	// end other player turn
+	game.EndTurn()
+
+	// expect mana to be refilled
+	player := game.players[game.sockets[game.current]]
+	if player.GetMana() != 2 {
+		t.Errorf("Expected %v mana, got %v", 2, player.GetMana())
+	}
 }

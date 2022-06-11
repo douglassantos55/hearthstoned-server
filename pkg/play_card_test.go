@@ -137,6 +137,8 @@ func TestPlacesOnBoard(t *testing.T) {
 	player := NewPlayer(NewSocket())
 
 	player.GainMana(1)
+	player.RefillMana()
+
 	card := NewCard(1, 1, 1)
 	player.PlayCard(card)
 

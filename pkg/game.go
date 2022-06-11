@@ -101,6 +101,7 @@ func (g *Game) StartTurn(duration time.Duration) {
 	current := g.NextPlayer()
 
 	current.GainMana(1)
+	current.RefillMana()
 	cards := current.DrawCards(1)
 
 	go g.StartTimer(duration)
