@@ -188,13 +188,11 @@ func TestDiscardTimeout(t *testing.T) {
 }
 
 func TestTurnTimer(t *testing.T) {
-	manager := NewGameManager()
-
 	p1 := NewSocket()
 	p2 := NewSocket()
 
-	game := manager.CreateGame([]*Socket{p1, p2})
-	game.StartTurn(100 * time.Millisecond)
+	game := NewGame([]*Socket{p1, p2}, 100*time.Millisecond)
+	game.StartTurn()
 
 	<-p1.Outgoing // start turn
 	<-p2.Outgoing // wait turn
@@ -274,22 +272,16 @@ func TestStartTurnWhenBothReady(t *testing.T) {
 }
 
 func TestPassTurn(t *testing.T) {
-	manager := NewGameManager()
-
 	p1 := NewSocket()
 	p2 := NewSocket()
 
-	game := manager.CreateGame([]*Socket{p1, p2})
-	game.StartTurn(time.Second)
+	game := NewGame([]*Socket{p1, p2}, time.Second)
+	game.StartTurn()
 
 	<-p1.Outgoing // start turn
 	<-p2.Outgoing // wait turn
 
-	manager.Process(Event{
-		Type:    EndTurn,
-		Payload: game.Id.String(),
-		Player:  p1,
-	})
+	game.EndTurn()
 
 	select {
 	case <-time.After(100 * time.Millisecond):
@@ -315,7 +307,7 @@ func TestRefillsManaOnTurnStart(t *testing.T) {
 	p2 := NewSocket()
 
 	game := NewGame([]*Socket{p1, p2}, time.Second)
-	game.StartTurn(time.Second)
+	game.StartTurn()
 
 	response := <-p1.Outgoing
 	payload := response.Payload.(TurnPayload)

@@ -90,11 +90,11 @@ func (g *Game) StartTimer(duration time.Duration) {
 		}
 	case <-timer.C:
 		// change game state to avoid discarding again?
-		g.StartTurn(g.turnDuration)
+		g.StartTurn()
 	}
 }
 
-func (g *Game) StartTurn(duration time.Duration) {
+func (g *Game) StartTurn() {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
@@ -104,7 +104,7 @@ func (g *Game) StartTurn(duration time.Duration) {
 	current.RefillMana()
 	cards := current.DrawCards(1)
 
-	go g.StartTimer(duration)
+	go g.StartTimer(g.turnDuration)
 
 	go current.Send(Response{
 		Type: StartTurn,
@@ -176,13 +176,13 @@ func (g *Game) Discard(cardIds []uuid.UUID, socket *Socket) {
 	// if both players are ready, start turns
 	if len(g.ready) == len(g.players) {
 		g.StopTimer <- true
-		g.StartTurn(g.turnDuration)
+		g.StartTurn()
 	}
 }
 
 func (g *Game) EndTurn() {
 	g.StopTimer <- true
-	g.StartTurn(g.turnDuration)
+	g.StartTurn()
 }
 
 func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
