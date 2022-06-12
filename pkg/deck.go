@@ -23,7 +23,7 @@ func NewDeck() *Deck {
 	return &Deck{cards: cards}
 }
 
-func (d *Deck) Push(card *Minion) {
+func (d *Deck) Push(card Card) {
 	if card != nil {
 		d.cards.PushBack(card)
 	}

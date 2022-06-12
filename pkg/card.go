@@ -16,6 +16,18 @@ type Ability interface {
 	Execute()
 }
 
+type TriggerableSpell struct {
+	*Spell
+	event GameEventType
+}
+
+func Trigerable(event GameEventType, spell *Spell) *TriggerableSpell {
+	return &TriggerableSpell{
+		Spell: spell,
+		event: event,
+	}
+}
+
 type GainMana struct {
 	amount int
 	player *Player
@@ -85,12 +97,12 @@ func (c *Minion) GetMana() int {
 }
 
 type Hand struct {
-	cards map[uuid.UUID]*Minion
+	cards map[uuid.UUID]Card
 	mutex *sync.Mutex
 }
 
 func NewHand(items *list.List) *Hand {
-	cards := map[uuid.UUID]*Minion{}
+	cards := map[uuid.UUID]Card{}
 	for cur := items.Front(); cur != nil; cur = cur.Next() {
 		card := cur.Value.(*Minion)
 		cards[card.Id] = card
@@ -101,7 +113,7 @@ func NewHand(items *list.List) *Hand {
 	}
 }
 
-func (h *Hand) Get(index int) *Minion {
+func (h *Hand) Get(index int) Card {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
@@ -115,25 +127,25 @@ func (h *Hand) Get(index int) *Minion {
 	return nil
 }
 
-func (h *Hand) Add(card *Minion) {
+func (h *Hand) Add(card Card) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
-	h.cards[card.Id] = card
+	h.cards[card.GetId()] = card
 }
 
-func (h *Hand) Find(cardId uuid.UUID) *Minion {
+func (h *Hand) Find(cardId uuid.UUID) Card {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
 	return h.cards[cardId]
 }
 
-func (h *Hand) Remove(card *Minion) {
+func (h *Hand) Remove(card Card) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
-	delete(h.cards, card.Id)
+	delete(h.cards, card.GetId())
 }
 
 func (h *Hand) Length() int {

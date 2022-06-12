@@ -1,5 +1,7 @@
 package pkg
 
+import "sync"
+
 type GameEventType = int
 
 const (
@@ -17,16 +19,21 @@ type Dispatcher interface {
 }
 
 type GameDispatcher struct {
+	mutex     *sync.Mutex
 	listeners map[GameEventType][]Listener
 }
 
 func NewGameDispatcher() *GameDispatcher {
 	return &GameDispatcher{
+		mutex:     new(sync.Mutex),
 		listeners: make(map[GameEventType][]Listener),
 	}
 }
 
 func (d *GameDispatcher) Subscribe(event GameEventType, listener Listener) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	if _, ok := d.listeners[event]; !ok {
 		d.listeners[event] = make([]Listener, 0)
 	}
@@ -34,6 +41,9 @@ func (d *GameDispatcher) Subscribe(event GameEventType, listener Listener) {
 }
 
 func (d *GameDispatcher) Dispatch(event GameEvent) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	for _, listener := range d.listeners[event.GetType()] {
 		listener(event)
 	}
@@ -81,10 +91,10 @@ func (d DestroyedEvent) GetType() GameEventType {
 }
 
 type CardPlacedEvent struct {
-	card *Minion
+	card Card
 }
 
-func NewCardPlayedEvent(card *Minion) CardPlacedEvent {
+func NewCardPlayedEvent(card Card) CardPlacedEvent {
 	return CardPlacedEvent{
 		card,
 	}

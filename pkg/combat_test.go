@@ -18,7 +18,7 @@ func TestAttackEvent(t *testing.T) {
 	response := <-p1.Outgoing // start turn
 	payload := response.Payload.(TurnPayload)
 
-	attacker := payload.Cards[0]
+	attacker := payload.Cards[0].(*Minion)
 	attacker.Mana = 1
 	attacker.Damage = 1
 	attacker.Health = 1
@@ -34,7 +34,7 @@ func TestAttackEvent(t *testing.T) {
 	response = <-p2.Outgoing // start turn
 	payload = response.Payload.(TurnPayload)
 
-	defender := payload.Cards[0]
+	defender := payload.Cards[0].(*Minion)
 	defender.Mana = 1
 	defender.Damage = 1
 	defender.Health = 2

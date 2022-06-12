@@ -39,7 +39,7 @@ func TestPlayCard(t *testing.T) {
 	<-p2.Outgoing // wait turn
 
 	// make sure it can get played
-	played := payload.Hand.Get(0)
+	played := payload.Hand.Get(0).(*Minion)
 	played.Mana = 1
 
 	// play a card
@@ -90,7 +90,7 @@ func TestNotEnoughMana(t *testing.T) {
 	<-p2.Outgoing // wait turn
 
 	// play a card with mana > 1
-	played := payload.Hand.Get(0)
+	played := payload.Hand.Get(0).(*Minion)
 	played.Mana = 5
 	game.PlayCard(played.Id, p1)
 
@@ -127,7 +127,7 @@ func TestCardNotFound(t *testing.T) {
 	<-p2.Outgoing // wait turn
 
 	// play a nonexisting card for player
-	played := payload.Hand.Get(0)
+	played := payload.Hand.Get(0).(*Minion)
 	played.Mana = 1
 	game.PlayCard(played.Id, p1)
 
@@ -195,15 +195,41 @@ func TestMagicCard(t *testing.T) {
 	player.GainMana(1)
 	player.RefillMana()
 
-	// create magic card
 	ability := GainManaAbility(2, player)
 	card := NewSpell(1, ability)
 
-	// play it
 	player.PlayCard(card)
 
-	// expect its ability to execute
 	if player.GetMana() != 1 {
 		t.Errorf("Expected %v mana, got %v", 1, player.GetMana())
 	}
+}
+
+func TestTriggeredSpell(t *testing.T) {
+	p1 := NewSocket()
+	p2 := NewSocket()
+
+	game := NewGame([]*Socket{p1, p2}, time.Second)
+	game.StartTurn()
+
+	ability := GainManaAbility(1, game.players[p1])
+	spell := Trigerable(TurnStartedEvent, NewSpell(1, ability))
+
+	// play a magic card with triggered spell
+	game.players[p1].hand.Add(spell)
+	game.PlayCard(spell.GetId(), p1)
+
+	// dispatch event
+	game.dispatcher.Dispatch(NewTurnStartedEvent(NewPlayer(NewSocket())))
+
+	// expect spell to cast
+	if game.players[p1].GetMana() != 1 {
+		t.Errorf("Expected %v mana, got %v", 1, game.players[p1].GetMana())
+	}
+}
+
+func TestMagicFullBoard(t *testing.T) {
+	// fill board
+	// play magic card
+	// expect it to cast normally
 }

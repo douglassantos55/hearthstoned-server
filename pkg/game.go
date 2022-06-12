@@ -227,6 +227,12 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 		return
 	}
 
+	if spell, ok := card.(*TriggerableSpell); ok {
+		g.dispatcher.Subscribe(spell.event, func(event GameEvent) {
+			spell.Cast()
+		})
+	}
+
 	// dispatch card played event
 	go g.dispatcher.Dispatch(NewCardPlayedEvent(card))
 }

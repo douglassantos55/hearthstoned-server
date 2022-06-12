@@ -92,7 +92,7 @@ func TestDiscardStartingHand(t *testing.T) {
 	discarded := payload.Hand.Get(2)
 	manager.Process(DiscardCardsEvent(
 		p1,
-		[]string{discarded.Id.String()},
+		[]string{discarded.GetId().String()},
 		payload.GameId.String(),
 	))
 
@@ -111,7 +111,7 @@ func TestDiscardStartingHand(t *testing.T) {
 			t.Errorf("Expected %v, got %v", INITIAL_HAND_LENGTH, newHand.Length())
 		}
 
-		if newHand.Find(discarded.Id) != nil {
+		if newHand.Find(discarded.GetId()) != nil {
 			t.Error("Expected card to be discarded")
 		}
 	}
@@ -307,8 +307,8 @@ func TestRefillsManaOnTurnStart(t *testing.T) {
 	payload := response.Payload.(TurnPayload)
 
 	// spend some mana
-	payload.Cards[0].Mana = 1
-	game.PlayCard(payload.Cards[0].Id, p1)
+	payload.Cards[0].(*Minion).Mana = 1
+	game.PlayCard(payload.Cards[0].GetId(), p1)
 
 	// end turn
 	game.EndTurn()

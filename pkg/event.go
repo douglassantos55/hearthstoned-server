@@ -59,7 +59,7 @@ type TurnPayload struct {
 	GameId      uuid.UUID
 	Mana        int
 	CardsInHand int
-	Cards       []*Minion
+	Cards       []Card
 }
 
 type PlayCardPayload struct {

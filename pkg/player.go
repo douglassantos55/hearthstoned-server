@@ -35,8 +35,8 @@ func NewPlayer(socket *Socket) *Player {
 	}
 }
 
-func (p *Player) DrawCards(qty int) []*Minion {
-	out := []*Minion{}
+func (p *Player) DrawCards(qty int) []Card {
+	out := []Card{}
 	cards := p.deck.Draw(qty)
 
 	for cur := cards.Front(); cur != nil; cur = cur.Next() {
@@ -56,7 +56,7 @@ func (p *Player) GetHand() *Hand {
 	return p.hand
 }
 
-func (p *Player) Discard(cardId uuid.UUID) *Minion {
+func (p *Player) Discard(cardId uuid.UUID) Card {
 	card := p.hand.Find(cardId)
 	if card != nil {
 		p.hand.Remove(card)
@@ -64,7 +64,7 @@ func (p *Player) Discard(cardId uuid.UUID) *Minion {
 	return card
 }
 
-func (p *Player) AddToDeck(card *Minion) {
+func (p *Player) AddToDeck(card Card) {
 	p.deck.Push(card)
 }
 
@@ -131,7 +131,7 @@ func (p *Player) NotifyDestroyed(event GameEvent) {
 }
 
 func (p *Player) NotifyCardPlayed(event GameEvent) {
-	card := event.GetData().(*Minion)
+	card := event.GetData().(Card)
 	go p.Send(Response{
 		Type:    CardPlayed,
 		Payload: card,
@@ -140,7 +140,7 @@ func (p *Player) NotifyCardPlayed(event GameEvent) {
 
 func (p *Player) NotifyTurnStarted(event GameEvent) {
 	player := event.GetData().(*Player)
-	cards := []*Minion{}
+	cards := []Card{}
 	for _, card := range player.hand.cards {
 		cards = append(cards, card)
 	}
