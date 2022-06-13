@@ -1,6 +1,9 @@
 package pkg
 
-import "sync"
+import (
+	"container/list"
+	"sync"
+)
 
 type GameEventType = int
 
@@ -11,7 +14,9 @@ const (
 	TurnStartedEvent
 )
 
-type Listener = func(event GameEvent)
+// Listener takes an event and returns true if it should be removed after
+// executing or false if it should remain and be executed multiple times
+type Listener = func(event GameEvent) bool
 
 type Dispatcher interface {
 	Dispatch(event GameEvent)
@@ -20,13 +25,13 @@ type Dispatcher interface {
 
 type GameDispatcher struct {
 	mutex     *sync.Mutex
-	listeners map[GameEventType][]Listener
+	listeners map[GameEventType]*list.List
 }
 
 func NewGameDispatcher() *GameDispatcher {
 	return &GameDispatcher{
 		mutex:     new(sync.Mutex),
-		listeners: make(map[GameEventType][]Listener),
+		listeners: make(map[GameEventType]*list.List),
 	}
 }
 
@@ -35,17 +40,21 @@ func (d *GameDispatcher) Subscribe(event GameEventType, listener Listener) {
 	defer d.mutex.Unlock()
 
 	if _, ok := d.listeners[event]; !ok {
-		d.listeners[event] = make([]Listener, 0)
+		d.listeners[event] = list.New()
 	}
-	d.listeners[event] = append(d.listeners[event], listener)
+	d.listeners[event].PushBack(listener)
 }
 
 func (d *GameDispatcher) Dispatch(event GameEvent) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	for _, listener := range d.listeners[event.GetType()] {
-		listener(event)
+	listeners := d.listeners[event.GetType()]
+	for cur := listeners.Front(); cur != nil; cur = cur.Next() {
+		listener := cur.Value.(Listener)
+		if listener(event) {
+			listeners.Remove(cur)
+		}
 	}
 }
 

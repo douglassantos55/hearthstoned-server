@@ -91,6 +91,12 @@ func (p *Player) GainMana(qty int) {
 	}
 }
 
+func (p *Player) ReduceMana(qty int) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.currMana -= qty
+}
+
 func (p *Player) GetMana() int {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -99,7 +105,7 @@ func (p *Player) GetMana() int {
 
 func (p *Player) PlayCard(card Card) error {
 	// reduce player's current mana
-	p.currMana -= card.GetMana()
+	p.ReduceMana(card.GetMana())
 
 	// add card to player's board
 	if minion, ok := card.(*Minion); ok {
@@ -110,7 +116,7 @@ func (p *Player) PlayCard(card Card) error {
 	}
 
 	if spell, ok := card.(*Spell); ok {
-		spell.Cast()
+		spell.Execute()
 	}
 
 	return nil
@@ -120,36 +126,35 @@ func (p *Player) CardsOnBoardCount() int {
 	return p.board.MinionsCount()
 }
 
-func (p *Player) NotifyDamage(event GameEvent) {
+func (p *Player) NotifyDamage(event GameEvent) bool {
 	minion := event.GetData().(*ActiveMinion)
 	go p.Send(DamageTaken(minion.Minion))
+	return false
 }
 
-func (p *Player) NotifyDestroyed(event GameEvent) {
+func (p *Player) NotifyDestroyed(event GameEvent) bool {
 	minion := event.GetData().(*ActiveMinion)
 	go p.Send(MinionDestroyedMessage(minion.Minion))
+	return false
 }
 
-func (p *Player) NotifyCardPlayed(event GameEvent) {
+func (p *Player) NotifyCardPlayed(event GameEvent) bool {
 	card := event.GetData().(Card)
 	go p.Send(Response{
 		Type:    CardPlayed,
 		Payload: card,
 	})
+	return false
 }
 
-func (p *Player) NotifyTurnStarted(event GameEvent) {
+func (p *Player) NotifyTurnStarted(event GameEvent) bool {
 	player := event.GetData().(*Player)
-	cards := []Card{}
-	for _, card := range player.hand.cards {
-		cards = append(cards, card)
-	}
 
 	if player == p {
 		go p.Send(Response{
 			Type: StartTurn,
 			Payload: TurnPayload{
-				Cards:       cards,
+				Cards:       player.hand.GetCards(),
 				Mana:        player.GetMana(),
 				CardsInHand: player.hand.Length(),
 			},
@@ -163,6 +168,7 @@ func (p *Player) NotifyTurnStarted(event GameEvent) {
 			},
 		})
 	}
+	return false
 }
 
 type Board struct {

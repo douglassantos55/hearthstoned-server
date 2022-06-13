@@ -13,7 +13,7 @@ type Card interface {
 }
 
 type Ability interface {
-	Execute()
+	Cast()
 }
 
 type TriggerableSpell struct {
@@ -40,8 +40,8 @@ func GainManaAbility(amount int, player *Player) GainMana {
 	}
 }
 
-func (g GainMana) Execute() {
-	g.player.AddMana(g.amount)
+func (g GainMana) Cast() {
+	g.player.GainMana(g.amount)
 }
 
 type Spell struct {
@@ -66,8 +66,8 @@ func (s *Spell) GetMana() int {
 	return s.Mana
 }
 
-func (s *Spell) Cast() {
-	s.Ability.Execute()
+func (s *Spell) Execute() {
+	s.Ability.Cast()
 }
 
 type Minion struct {
@@ -132,6 +132,17 @@ func (h *Hand) Add(card Card) {
 	defer h.mutex.Unlock()
 
 	h.cards[card.GetId()] = card
+}
+
+func (h *Hand) GetCards() []Card {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	cards := []Card{}
+	for _, card := range h.cards {
+		cards = append(cards, card)
+	}
+	return cards
 }
 
 func (h *Hand) Find(cardId uuid.UUID) Card {

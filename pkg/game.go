@@ -228,8 +228,9 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 	}
 
 	if spell, ok := card.(*TriggerableSpell); ok {
-		g.dispatcher.Subscribe(spell.event, func(event GameEvent) {
-			spell.Cast()
+		g.dispatcher.Subscribe(spell.event, func(event GameEvent) bool {
+			spell.Execute()
+			return true
 		})
 	}
 
