@@ -240,7 +240,12 @@ func (g *Game) HandleAbilities(event GameEvent) bool {
 
 		current := g.players[g.sockets[g.current]]
 
-		if spell, ok := card.(*Spell); ok {
+		if minion, ok := card.(*Minion); ok {
+			if minion.HasAbility() {
+				minion.Ability.SetTarget(minion)
+				minion.Ability.Cast()
+			}
+		} else if spell, ok := card.(*Spell); ok {
 			spell.Execute(current)
 		} else if spell, ok := card.(*TriggerableSpell); ok {
 			go g.dispatcher.Subscribe(spell.event, func(event GameEvent) bool {

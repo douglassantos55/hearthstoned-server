@@ -330,3 +330,67 @@ func TestMagicFullBoard(t *testing.T) {
 		t.Errorf("expected %v mana, got %v", 2, player.GetTotalMana())
 	}
 }
+
+func TestMinionAbility(t *testing.T) {
+	p1 := NewSocket()
+	p2 := NewSocket()
+	game := NewGame([]*Socket{p1, p2}, time.Second)
+
+	// create a minion
+	minion := NewCard(1, 1, 1)
+
+	// give it an ability
+	minion.SetAbility(GainDamageAbility(1))
+
+	// play the minion
+	player := game.players[p1]
+	player.hand.Add(minion)
+
+	game.StartTurn()
+
+	<-p1.Outgoing
+	<-p2.Outgoing
+
+	game.PlayCard(minion.GetId(), p1)
+
+	<-p1.Outgoing
+	<-p2.Outgoing
+
+	// expect ability to be cast
+	if minion.GetDamage() != 2 {
+		t.Errorf("Expected %v damage, got %v", 2, minion.GetDamage())
+	}
+}
+
+func TestTriggerableMinionAbility(t *testing.T) {
+	p1 := NewSocket()
+	p2 := NewSocket()
+
+	game := NewGame([]*Socket{p1, p2}, time.Second)
+
+	// create a minion
+	minion := NewCard(1, 1, 1)
+
+	// give it an ability
+    minion.SetTrigger(TurnStartedEvent)
+	minion.SetAbility(GainDamageAbility(1))
+
+	// play the minion
+	player := game.players[p1]
+	player.hand.Add(minion)
+
+	game.StartTurn()
+
+	<-p1.Outgoing
+	<-p2.Outgoing
+
+	game.PlayCard(minion.GetId(), p1)
+
+	<-p1.Outgoing
+	<-p2.Outgoing
+
+	// expect ability to be cast
+	if minion.GetDamage() != 2 {
+		t.Errorf("Expected %v damage, got %v", 2, minion.GetDamage())
+	}
+}

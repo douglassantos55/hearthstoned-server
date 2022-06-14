@@ -14,7 +14,7 @@ type Card interface {
 
 type Ability interface {
 	Cast()
-	SetCaster(caster *Player)
+	SetTarget(target interface{})
 }
 
 type TriggerableSpell struct {
@@ -40,8 +40,8 @@ func GainManaAbility(amount int) *GainMana {
 	}
 }
 
-func (g *GainMana) SetCaster(caster *Player) {
-	g.player = caster
+func (g *GainMana) SetTarget(target interface{}) {
+	g.player = target.(*Player)
 }
 
 func (g *GainMana) Cast() {
@@ -53,11 +53,18 @@ type GainDamage struct {
 	minion *Minion
 }
 
-func (g *GainDamage) Cast() {
-	g.minion.Damage += g.amount
+func GainDamageAbility(amount int) *GainDamage {
+	return &GainDamage{
+		amount: amount,
+	}
 }
 
-func (g *GainDamage) SetCaster(caster *Player) {
+func (g *GainDamage) Cast() {
+	g.minion.GainDamage(g.amount)
+}
+
+func (g *GainDamage) SetTarget(target interface{}) {
+	g.minion = target.(*Minion)
 }
 
 // Spell card
@@ -84,21 +91,24 @@ func (s *Spell) GetMana() int {
 }
 
 func (s *Spell) Execute(caster *Player) {
-	s.Ability.SetCaster(caster)
+	s.Ability.SetTarget(caster)
 	s.Ability.Cast()
 }
 
 type Minion struct {
-	Id uuid.UUID
+	Id    uuid.UUID
+	mutex *sync.Mutex
 
-	Mana   int
-	Damage int
-	Health int
+	Mana    int
+	Damage  int
+	Health  int
+	Ability Ability
 }
 
 func NewCard(mana, damage, health int) *Minion {
 	return &Minion{
-		Id: uuid.New(),
+		Id:    uuid.New(),
+		mutex: new(sync.Mutex),
 
 		Mana:   mana,
 		Damage: damage,
@@ -112,6 +122,31 @@ func (c *Minion) GetId() uuid.UUID {
 
 func (c *Minion) GetMana() int {
 	return c.Mana
+}
+
+func (m *Minion) HasAbility() bool {
+	return m.Ability != nil
+}
+
+func (m *Minion) SetTrigger(event GameEventType) {
+}
+
+func (m *Minion) SetAbility(ability Ability) {
+	m.Ability = ability
+}
+
+func (m *Minion) GainDamage(amount int) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.Damage += amount
+}
+
+func (m *Minion) GetDamage() int {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	return m.Damage
 }
 
 type Hand struct {
