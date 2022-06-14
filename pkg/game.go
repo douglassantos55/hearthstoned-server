@@ -70,18 +70,20 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 		dispatcher.Subscribe(TurnStartedEvent, player.NotifyTurnStarted)
 	}
 
-	return &Game{
-		Id: uuid.New(),
-
+	game := &Game{
+		Id:           uuid.New(),
 		StopTimer:    make(chan bool),
 		turnDuration: turnDuration,
-
-		current:    -1,
-		sockets:    sockets,
-		players:    players,
-		mutex:      new(sync.Mutex),
-		dispatcher: dispatcher,
+		current:      -1,
+		sockets:      sockets,
+		players:      players,
+		mutex:        new(sync.Mutex),
+		dispatcher:   dispatcher,
 	}
+
+	dispatcher.Subscribe(CardPlayedEvent, game.HandleAbilities)
+
+	return game
 }
 
 func (g *Game) ChooseStartingHand(duration time.Duration) {
@@ -227,15 +229,29 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 		return
 	}
 
-	if spell, ok := card.(*TriggerableSpell); ok {
-		g.dispatcher.Subscribe(spell.event, func(event GameEvent) bool {
-			spell.Execute()
-			return true
-		})
-	}
-
 	// dispatch card played event
 	go g.dispatcher.Dispatch(NewCardPlayedEvent(card))
+}
+
+func (g *Game) HandleAbilities(event GameEvent) bool {
+	if card, ok := event.GetData().(Card); ok {
+        g.mutex.Lock()
+        defer g.mutex.Unlock()
+
+		current := g.players[g.sockets[g.current]]
+
+		if spell, ok := card.(*Spell); ok {
+			spell.Execute(current)
+		}
+
+		if spell, ok := card.(*TriggerableSpell); ok {
+			go g.dispatcher.Subscribe(spell.event, func(event GameEvent) bool {
+				spell.Execute(current)
+				return true
+			})
+		}
+	}
+	return false
 }
 
 func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {

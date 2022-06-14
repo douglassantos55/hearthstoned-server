@@ -38,13 +38,11 @@ func NewPlayer(socket *Socket) *Player {
 func (p *Player) DrawCards(qty int) []Card {
 	out := []Card{}
 	cards := p.deck.Draw(qty)
-
 	for cur := cards.Front(); cur != nil; cur = cur.Next() {
 		card := cur.Value.(*Minion)
 		p.hand.Add(card)
 		out = append(out, card)
 	}
-
 	return out
 }
 
@@ -103,6 +101,12 @@ func (p *Player) GetMana() int {
 	return p.currMana
 }
 
+func (p *Player) GetTotalMana() int {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	return p.totalMana
+}
+
 func (p *Player) PlayCard(card Card) error {
 	// reduce player's current mana
 	p.ReduceMana(card.GetMana())
@@ -113,10 +117,6 @@ func (p *Player) PlayCard(card Card) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	if spell, ok := card.(*Spell); ok {
-		spell.Execute()
 	}
 
 	return nil

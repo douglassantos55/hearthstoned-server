@@ -14,6 +14,7 @@ type Card interface {
 
 type Ability interface {
 	Cast()
+	SetCaster(caster *Player)
 }
 
 type TriggerableSpell struct {
@@ -33,17 +34,33 @@ type GainMana struct {
 	player *Player
 }
 
-func GainManaAbility(amount int, player *Player) GainMana {
-	return GainMana{
+func GainManaAbility(amount int) *GainMana {
+	return &GainMana{
 		amount: amount,
-		player: player,
 	}
 }
 
-func (g GainMana) Cast() {
+func (g *GainMana) SetCaster(caster *Player) {
+	g.player = caster
+}
+
+func (g *GainMana) Cast() {
 	g.player.GainMana(g.amount)
 }
 
+type GainDamage struct {
+	amount int
+	minion *Minion
+}
+
+func (g *GainDamage) Cast() {
+	g.minion.Damage += g.amount
+}
+
+func (g *GainDamage) SetCaster(caster *Player) {
+}
+
+// Spell card
 type Spell struct {
 	Id      uuid.UUID
 	Mana    int
@@ -66,7 +83,8 @@ func (s *Spell) GetMana() int {
 	return s.Mana
 }
 
-func (s *Spell) Execute() {
+func (s *Spell) Execute(caster *Player) {
+	s.Ability.SetCaster(caster)
 	s.Ability.Cast()
 }
 
