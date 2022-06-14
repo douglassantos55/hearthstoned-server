@@ -103,6 +103,7 @@ type Minion struct {
 	Damage  int
 	Health  int
 	Ability Ability
+	Trigger GameEventType
 }
 
 func NewCard(mana, damage, health int) *Minion {
@@ -110,9 +111,10 @@ func NewCard(mana, damage, health int) *Minion {
 		Id:    uuid.New(),
 		mutex: new(sync.Mutex),
 
-		Mana:   mana,
-		Damage: damage,
-		Health: health,
+		Mana:    mana,
+		Damage:  damage,
+		Health:  health,
+		Trigger: -1,
 	}
 }
 
@@ -129,6 +131,7 @@ func (m *Minion) HasAbility() bool {
 }
 
 func (m *Minion) SetTrigger(event GameEventType) {
+	m.Trigger = event
 }
 
 func (m *Minion) SetAbility(ability Ability) {

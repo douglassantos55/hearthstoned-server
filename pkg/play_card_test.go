@@ -372,7 +372,7 @@ func TestTriggerableMinionAbility(t *testing.T) {
 	minion := NewCard(1, 1, 1)
 
 	// give it an ability
-    minion.SetTrigger(TurnStartedEvent)
+	minion.SetTrigger(TurnStartedEvent)
 	minion.SetAbility(GainDamageAbility(1))
 
 	// play the minion
@@ -385,6 +385,20 @@ func TestTriggerableMinionAbility(t *testing.T) {
 	<-p2.Outgoing
 
 	game.PlayCard(minion.GetId(), p1)
+
+	<-p1.Outgoing
+	<-p2.Outgoing
+
+	if minion.GetDamage() != 1 {
+		t.Errorf("Expected %v damage, got %v", 1, minion.GetDamage())
+	}
+
+	game.EndTurn()
+
+	<-p1.Outgoing
+	<-p2.Outgoing
+
+	game.EndTurn()
 
 	<-p1.Outgoing
 	<-p2.Outgoing
