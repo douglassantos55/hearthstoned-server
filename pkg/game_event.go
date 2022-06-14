@@ -134,3 +134,8 @@ func (t TurnStarted) GetData() interface{} {
 func (t TurnStarted) GetType() GameEventType {
 	return TurnStartedEvent
 }
+
+type Trigger struct {
+	Event     GameEventType
+	Condition func(event GameEvent) bool // Determines whether this trigger should be activated
+}

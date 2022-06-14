@@ -227,7 +227,9 @@ func TestTriggeredSpell(t *testing.T) {
 	<-p2.Outgoing
 
 	ability := GainManaAbility(1)
-	spell := Trigerable(TurnStartedEvent, NewSpell(1, ability))
+	spell := Trigerable(&Trigger{
+		Event: TurnStartedEvent,
+	}, NewSpell(1, ability))
 
 	// play a magic card with triggered spell
 	player := game.players[p1]
@@ -265,7 +267,9 @@ func TestTriggeredSpellOnce(t *testing.T) {
 	<-p2.Outgoing
 
 	ability := GainManaAbility(1)
-	spell := Trigerable(TurnStartedEvent, NewSpell(1, ability))
+	spell := Trigerable(&Trigger{
+		Event: TurnStartedEvent,
+	}, NewSpell(1, ability))
 
 	// play a magic card with triggered spell
 	player := game.players[p1]
@@ -340,7 +344,7 @@ func TestMinionAbility(t *testing.T) {
 	minion := NewCard(1, 1, 1)
 
 	// give it an ability
-	minion.SetAbility(GainDamageAbility(1))
+	minion.SetAbility(nil, GainDamageAbility(1))
 
 	// play the minion
 	player := game.players[p1]
@@ -372,17 +376,24 @@ func TestTriggerableMinionAbility(t *testing.T) {
 	minion := NewCard(1, 1, 1)
 
 	// give it an ability
-	minion.SetTrigger(TurnStartedEvent)
-	minion.SetAbility(GainDamageAbility(1))
+	trigger := &Trigger{
+		Event: TurnStartedEvent,
+		Condition: func(event GameEvent) bool {
+			player := event.GetData().(*Player)
+			return player != game.players[p1]
+		},
+	}
 
-	// play the minion
-	player := game.players[p1]
-	player.hand.Add(minion)
+	minion.SetAbility(trigger, GainDamageAbility(1))
 
 	game.StartTurn()
 
 	<-p1.Outgoing
 	<-p2.Outgoing
+
+	// play the minion
+	player := game.players[p1]
+	player.hand.Add(minion)
 
 	game.PlayCard(minion.GetId(), p1)
 

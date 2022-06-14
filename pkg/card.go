@@ -19,13 +19,13 @@ type Ability interface {
 
 type TriggerableSpell struct {
 	*Spell
-	event GameEventType
+	Trigger *Trigger
 }
 
-func Trigerable(event GameEventType, spell *Spell) *TriggerableSpell {
+func Trigerable(trigger *Trigger, spell *Spell) *TriggerableSpell {
 	return &TriggerableSpell{
-		Spell: spell,
-		event: event,
+		Spell:   spell,
+		Trigger: trigger,
 	}
 }
 
@@ -103,7 +103,7 @@ type Minion struct {
 	Damage  int
 	Health  int
 	Ability Ability
-	Trigger *GameEventType
+	Trigger *Trigger
 }
 
 func NewCard(mana, damage, health int) *Minion {
@@ -134,11 +134,8 @@ func (m *Minion) CastAbility() {
 	m.Ability.Cast()
 }
 
-func (m *Minion) SetTrigger(event GameEventType) {
-	m.Trigger = &event
-}
-
-func (m *Minion) SetAbility(ability Ability) {
+func (m *Minion) SetAbility(trigger *Trigger, ability Ability) {
+	m.Trigger = trigger
 	m.Ability = ability
 }
 
