@@ -197,8 +197,8 @@ func TestMagicCard(t *testing.T) {
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 	game.StartTurn()
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	ability := GainManaAbility(2)
 	card := NewSpell(1, ability)
@@ -208,8 +208,8 @@ func TestMagicCard(t *testing.T) {
 
 	game.PlayCard(card.GetId(), p1)
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	if player.GetTotalMana() != 3 {
 		t.Errorf("Expected %v mana, got %v", 3, player.GetTotalMana())
@@ -223,8 +223,8 @@ func TestTriggeredSpell(t *testing.T) {
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 	game.StartTurn()
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	ability := GainManaAbility(1)
 	spell := Trigerable(TurnStartedEvent, NewSpell(1, ability))
@@ -235,18 +235,18 @@ func TestTriggeredSpell(t *testing.T) {
 
 	game.PlayCard(spell.GetId(), p1)
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	game.EndTurn() // p1 end turn
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	game.EndTurn() // p2 end turn
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	// expect spell to cast
 	if player.GetMana() != 3 {
@@ -261,39 +261,39 @@ func TestTriggeredSpellOnce(t *testing.T) {
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 	game.StartTurn()
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	ability := GainManaAbility(1)
 	spell := Trigerable(TurnStartedEvent, NewSpell(1, ability))
 
 	// play a magic card with triggered spell
-    player := game.players[p1]
-    player.hand.Add(spell)
+	player := game.players[p1]
+	player.hand.Add(spell)
 	game.PlayCard(spell.GetId(), p1)
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	game.EndTurn() // p1 end turn
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	game.EndTurn() // p2 end turn
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	game.EndTurn() // p1 end turn
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	game.EndTurn() // p2 end turn
 
-    <-p1.Outgoing
-    <-p2.Outgoing
+	<-p1.Outgoing
+	<-p2.Outgoing
 
 	// expect spell to cast
 	if player.GetMana() != 4 {
@@ -302,7 +302,31 @@ func TestTriggeredSpellOnce(t *testing.T) {
 }
 
 func TestMagicFullBoard(t *testing.T) {
+	p1 := NewSocket()
+	p2 := NewSocket()
+	game := NewGame([]*Socket{p1, p2}, time.Second)
+	game.StartTurn()
+
+	<-p1.Outgoing
+	<-p2.Outgoing
+
 	// fill board
+	player := game.players[p1]
+	for i := 0; i < 7; i++ {
+		player.board.Place(NewCard(i, i, i))
+	}
+
 	// play magic card
+	spell := NewSpell(1, GainManaAbility(1))
+	player.hand.Add(spell)
+
 	// expect it to cast normally
+	game.PlayCard(spell.GetId(), p1)
+
+	<-p1.Outgoing
+	<-p2.Outgoing
+
+	if player.GetTotalMana() != 2 {
+		t.Errorf("expected %v mana, got %v", 2, player.GetTotalMana())
+	}
 }

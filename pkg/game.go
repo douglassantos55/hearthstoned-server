@@ -235,16 +235,14 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 
 func (g *Game) HandleAbilities(event GameEvent) bool {
 	if card, ok := event.GetData().(Card); ok {
-        g.mutex.Lock()
-        defer g.mutex.Unlock()
+		g.mutex.Lock()
+		defer g.mutex.Unlock()
 
 		current := g.players[g.sockets[g.current]]
 
 		if spell, ok := card.(*Spell); ok {
 			spell.Execute(current)
-		}
-
-		if spell, ok := card.(*TriggerableSpell); ok {
+		} else if spell, ok := card.(*TriggerableSpell); ok {
 			go g.dispatcher.Subscribe(spell.event, func(event GameEvent) bool {
 				spell.Execute(current)
 				return true
