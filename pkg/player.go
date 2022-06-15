@@ -107,19 +107,21 @@ func (p *Player) GetTotalMana() int {
 	return p.totalMana
 }
 
-func (p *Player) PlayCard(card Card) error {
+func (p *Player) PlayCard(card Card) (Card, error) {
 	// reduce player's current mana
 	p.ReduceMana(card.GetMana())
 
 	// add card to player's board
 	if minion, ok := card.(*Minion); ok {
-		err := p.board.Place(minion)
+		activeMinion := NewMinion(minion, p)
+		err := p.board.Place(activeMinion)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		return activeMinion, nil
 	}
 
-	return nil
+	return card, nil
 }
 
 func (p *Player) CardsOnBoardCount() int {
@@ -194,11 +196,11 @@ func (b *Board) Remove(minion *ActiveMinion) {
 	delete(b.minions, minion.Id)
 }
 
-func (b *Board) Place(card *Minion) error {
+func (b *Board) Place(card *ActiveMinion) error {
 	if b.MinionsCount() == MAX_MINIONS {
 		return errors.New("Cannot place minion, board is full")
 	}
-	b.minions[card.Id] = NewMinion(card)
+	b.minions[card.Id] = card
 	return nil
 }
 

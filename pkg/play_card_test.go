@@ -52,7 +52,7 @@ func TestPlayCard(t *testing.T) {
 		if response.Type != CardPlayed {
 			t.Errorf("expected %v, got %v", CardPlayed, response.Type)
 		}
-		card := response.Payload.(*Minion)
+		card := response.Payload.(*ActiveMinion)
 		if card.Id != played.Id {
 			t.Errorf("expected %v, got %v", played.Id, card.Id)
 		}
@@ -65,7 +65,7 @@ func TestPlayCard(t *testing.T) {
 		if response.Type != CardPlayed {
 			t.Errorf("expected %v, got %v", CardPlayed, response.Type)
 		}
-		card := response.Payload.(*Minion)
+		card := response.Payload.(*ActiveMinion)
 		if card.Id != played.Id {
 			t.Errorf("expected %v, got %v", played.Id, card.Id)
 		}
@@ -174,11 +174,11 @@ func TestFullBoard(t *testing.T) {
 	// fill the board
 	board := NewBoard()
 	for i := 0; i < MAX_MINIONS; i++ {
-		board.Place(NewCard(i, i, i))
+		board.Place(NewMinion(NewCard(i, i, i), nil))
 	}
 
 	// try to play another card
-	err := board.Place(NewCard(1, 1, 1))
+	err := board.Place(NewMinion(NewCard(1, 1, 1), nil))
 
 	// expect error
 	if err == nil {
@@ -317,7 +317,7 @@ func TestMagicFullBoard(t *testing.T) {
 	// fill board
 	player := game.players[p1]
 	for i := 0; i < 7; i++ {
-		player.board.Place(NewCard(i, i, i))
+		player.board.Place(NewMinion(NewCard(i, i, i), player))
 	}
 
 	// play magic card
@@ -378,9 +378,10 @@ func TestTriggerableMinionAbility(t *testing.T) {
 	// give it an ability
 	trigger := &Trigger{
 		Event: TurnStartedEvent,
-		Condition: func(event GameEvent) bool {
+		Condition: func(card Card, event GameEvent) bool {
 			player := event.GetData().(*Player)
-			return player != game.players[p1]
+			minion := card.(*ActiveMinion)
+			return player == minion.player
 		},
 	}
 

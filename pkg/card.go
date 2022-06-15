@@ -252,12 +252,14 @@ func (e Exhausted) CanCounterAttack() bool {
 // ability to attack and states
 type ActiveMinion struct {
 	*Minion
-	state MinionState
+	player *Player
+	state  MinionState
 }
 
-func NewMinion(card *Minion) *ActiveMinion {
+func NewMinion(card *Minion, player *Player) *ActiveMinion {
 	return &ActiveMinion{
 		Minion: card,
+		player: player,
 		state:  Exhausted{},
 	}
 }

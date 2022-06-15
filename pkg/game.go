@@ -220,7 +220,7 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 	}
 
 	// play card
-	err := current.PlayCard(card)
+	minion, err := current.PlayCard(card)
 	if err != nil {
 		go current.Send(Response{
 			Type:    Error,
@@ -230,7 +230,7 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 	}
 
 	// dispatch card played event
-	go g.dispatcher.Dispatch(NewCardPlayedEvent(card))
+	go g.dispatcher.Dispatch(NewCardPlayedEvent(minion))
 }
 
 func (g *Game) HandleAbilities(event GameEvent) bool {
@@ -240,11 +240,11 @@ func (g *Game) HandleAbilities(event GameEvent) bool {
 
 		current := g.players[g.sockets[g.current]]
 
-		if minion, ok := card.(*Minion); ok {
+		if minion, ok := card.(*ActiveMinion); ok {
 			if minion.HasAbility() {
 				if minion.Trigger != nil {
 					go g.dispatcher.Subscribe(minion.Trigger.Event, func(event GameEvent) bool {
-						if minion.Trigger.Condition(event) {
+						if minion.Trigger.Condition == nil || minion.Trigger.Condition(minion, event) {
 							minion.CastAbility()
 						}
 						// until it dies
@@ -258,7 +258,7 @@ func (g *Game) HandleAbilities(event GameEvent) bool {
 			spell.Execute(current)
 		} else if spell, ok := card.(*TriggerableSpell); ok {
 			go g.dispatcher.Subscribe(spell.Trigger.Event, func(event GameEvent) bool {
-				if spell.Trigger.Condition == nil || spell.Trigger.Condition(event) {
+				if spell.Trigger.Condition == nil || spell.Trigger.Condition(spell, event) {
 					spell.Execute(current)
 				}
 				return true
