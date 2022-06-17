@@ -119,8 +119,9 @@ func TestCardNotFound(t *testing.T) {
 	// get starting hands
 	game.ChooseStartingHand(time.Millisecond)
 
-	<-p1.Outgoing // starting hand
-	response := <-p2.Outgoing
+	response := <-p1.Outgoing // starting hand
+
+	response = <-p2.Outgoing
 	payload := response.Payload.(StartingHandPayload)
 
 	<-p1.Outgoing // start turn
@@ -129,7 +130,7 @@ func TestCardNotFound(t *testing.T) {
 	// play a nonexisting card for player
 	played := payload.Hand.Get(0).(*Minion)
 	played.Mana = 1
-	game.PlayCard(played.Id, p1)
+	game.PlayCard(played.GetId(), p1)
 
 	// expect error response
 	select {
@@ -152,7 +153,7 @@ func TestPlacesOnBoard(t *testing.T) {
 	player.GainMana(1)
 	player.RefillMana()
 
-	card := NewCard(1, 1, 1)
+	card := NewCard("", 1, 1, 1)
 	player.PlayCard(card)
 
 	if player.CardsOnBoardCount() != 1 {
@@ -174,11 +175,11 @@ func TestFullBoard(t *testing.T) {
 	// fill the board
 	board := NewBoard()
 	for i := 0; i < MAX_MINIONS; i++ {
-		board.Place(NewMinion(NewCard(i, i, i), nil))
+		board.Place(NewMinion(NewCard("", i, i, i), nil))
 	}
 
 	// try to play another card
-	err := board.Place(NewMinion(NewCard(1, 1, 1), nil))
+	err := board.Place(NewMinion(NewCard("", 1, 1, 1), nil))
 
 	// expect error
 	if err == nil {
@@ -317,7 +318,7 @@ func TestMagicFullBoard(t *testing.T) {
 	// fill board
 	player := game.players[p1]
 	for i := 0; i < 7; i++ {
-		player.board.Place(NewMinion(NewCard(i, i, i), player))
+		player.board.Place(NewMinion(NewCard("", i, i, i), player))
 	}
 
 	// play magic card
@@ -341,7 +342,7 @@ func TestMinionAbility(t *testing.T) {
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 
 	// create a minion
-	minion := NewCard(1, 1, 1)
+	minion := NewCard("", 1, 1, 1)
 
 	// give it an ability
 	minion.SetAbility(nil, GainDamageAbility(1))
@@ -373,7 +374,7 @@ func TestTriggerableMinionAbility(t *testing.T) {
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 
 	// create a minion
-	minion := NewCard(1, 1, 1)
+	minion := NewCard("", 1, 1, 1)
 
 	// give it an ability
 	trigger := &Trigger{

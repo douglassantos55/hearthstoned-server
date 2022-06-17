@@ -3,13 +3,13 @@ package pkg
 import "testing"
 
 func TestCreateMinion(t *testing.T) {
-	card, _ := CreateCard(`{
-        "type": "minion",
-        "name": "Black Magician of Doom",
-        "mana": 2,
-        "damage": 5,
-        "health": 2
-    }`)
+	card, _ := CreateCard(CardData{
+		Type:   "minion",
+		Name:   "Black Magician of Doom",
+		Mana:   2,
+		Damage: 5,
+		Health: 2,
+	})
 
 	minion := card.(*Minion)
 
@@ -27,15 +27,15 @@ func TestCreateMinion(t *testing.T) {
 }
 
 func TestCreateSpell(t *testing.T) {
-	card, _ := CreateCard(`{
-        "type": "spell",
-        "name": "Unlucky",
-        "mana": 2,
-        "ability": {
-            "type": "gain_mana",
-            "params": { "amount": 4 }
-        }
-    }`)
+	card, _ := CreateCard(CardData{
+		Type: "spell",
+		Name: "Unlucky",
+		Mana: 2,
+		Ability: AbilityData{
+			Type:   "gain_mana",
+			Params: map[string]interface{}{"amount": 4.0},
+		},
+	})
 
 	if _, ok := card.(*TriggerableSpell); ok {
 		t.Error("Should not be a triggerable spell")
@@ -59,18 +59,18 @@ func TestCreateSpell(t *testing.T) {
 }
 
 func TestCreateMinionWithAbility(t *testing.T) {
-	card, _ := CreateCard(`{
-        "type": "minion",
-        "name": "Crazy Shirtless Dude",
-        "mana": 1,
-        "damage": 1,
-        "health": 1,
-        "ability": {
-            "type": "gain_damage",
-            "params": { "amount": 1 },
-            "trigger": "turn_started"
-        }
-    }`)
+	card, _ := CreateCard(CardData{
+		Type:   "minion",
+		Name:   "Crazy Shirtless Dude",
+		Mana:   1,
+		Damage: 1,
+		Health: 1,
+		Ability: AbilityData{
+			Type:    "gain_damage",
+			Params:  map[string]interface{}{"amount": 1.0},
+			Trigger: "turn_started",
+		},
+	})
 
 	minion := card.(*Minion)
 
@@ -90,16 +90,16 @@ func TestCreateMinionWithAbility(t *testing.T) {
 }
 
 func TestSpellWithTrigger(t *testing.T) {
-	card, err := CreateCard(`{
-        "type": "spell",
-        "name": "Unlucky",
-        "mana": 2,
-        "ability": {
-            "type": "gain_mana",
-            "params": { "amount": 4 },
-            "trigger": "turn_started"
-        }
-    }`)
+	card, err := CreateCard(CardData{
+		Type: "spell",
+		Name: "Unlucky",
+		Mana: 2,
+		Ability: AbilityData{
+			Type:    "gain_mana",
+			Params:  map[string]interface{}{"amount": 4.0},
+			Trigger: "turn_started",
+		},
+	})
 
 	if err != nil {
 		t.Error(err)
@@ -120,19 +120,19 @@ func TestSpellWithTrigger(t *testing.T) {
 }
 
 func TestMinionWithCondition(t *testing.T) {
-	card, err := CreateCard(`{
-        "type": "minion",
-        "name": "Crazy Shirtless Dude",
-        "mana": 1,
-        "damage": 1,
-        "health": 1,
-        "ability": {
-            "type": "gain_damage",
-            "params": { "amount": 1 },
-            "trigger": "minion_destroyed",
-            "condition": "allied"
-        }
-    }`)
+	card, err := CreateCard(CardData{
+		Type:   "minion",
+		Name:   "Crazy Shirtless Dude",
+		Mana:   1,
+		Damage: 1,
+		Health: 1,
+		Ability: AbilityData{
+			Type:      "gain_damage",
+			Params:    map[string]interface{}{"amount": 1.0},
+			Trigger:   "minion_destroyed",
+			Condition: "allied",
+		},
+	})
 
 	if err != nil {
 		t.Error(err)
@@ -164,7 +164,7 @@ func TestMinionWithCondition(t *testing.T) {
 	})
 
 	player := NewPlayer(NewSocket())
-	deadMinion := NewMinion(NewCard(1, 1, 2), player)
+	deadMinion := NewMinion(NewCard("", 1, 1, 2), player)
 
 	player.PlayCard(minion)
 	dispatcher.Dispatch(NewDestroyedEvent(deadMinion))
@@ -175,19 +175,19 @@ func TestMinionWithCondition(t *testing.T) {
 }
 
 func TestTurnStartedCondition(t *testing.T) {
-	card, err := CreateCard(`{
-        "type": "minion",
-        "name": "Crazy Shirtless Dude",
-        "mana": 1,
-        "damage": 1,
-        "health": 1,
-        "ability": {
-            "type": "gain_damage",
-            "params": { "amount": 1 },
-            "trigger": "turn_started",
-            "condition": "self"
-        }
-    }`)
+	card, err := CreateCard(CardData{
+		Type:   "minion",
+		Name:   "Crazy Shirtless Dude",
+		Mana:   1,
+		Damage: 1,
+		Health: 1,
+		Ability: AbilityData{
+			Type:      "gain_damage",
+			Params:    map[string]interface{}{"amount": 1.0},
+			Trigger:   "turn_started",
+			Condition: "self",
+		},
+	})
 
 	if err != nil {
 		t.Error(err)

@@ -3,7 +3,45 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 )
+
+var cards []Card
+
+func GetCards() []Card {
+	if len(cards) > 0 {
+		return cards
+	}
+
+	data, err := loadCards("cards.json")
+	if err != nil {
+		return cards
+	}
+
+	for _, data := range data {
+		card, err := CreateCard(data)
+		if err == nil {
+			cards = append(cards, card)
+		}
+	}
+	return cards
+}
+
+func loadCards(filename string) ([]CardData, error) {
+	var cardsData []CardData
+	contents, err := os.ReadFile(filename)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(contents, &cardsData)
+	if err != nil {
+		return nil, err
+	}
+
+	return cardsData, nil
+}
 
 type CardData struct {
 	Type    string      `json:"type"`
@@ -25,14 +63,7 @@ type TriggerData struct {
 	Event string `json:"string"`
 }
 
-func CreateCard(cardJson string) (Card, error) {
-	var data CardData
-	err := json.Unmarshal([]byte(cardJson), &data)
-
-	if err != nil {
-		return nil, err
-	}
-
+func CreateCard(data CardData) (Card, error) {
 	switch data.Type {
 	case "minion":
 		return CreateMinionCard(data)
@@ -44,7 +75,7 @@ func CreateCard(cardJson string) (Card, error) {
 }
 
 func CreateMinionCard(data CardData) (Card, error) {
-	minion := NewCard(data.Mana, data.Damage, data.Health)
+	minion := NewCard(data.Name, data.Mana, data.Damage, data.Health)
 	ability, err := CreateAbility(data.Ability)
 
 	if err == nil {

@@ -99,6 +99,7 @@ type Minion struct {
 	Id    uuid.UUID
 	mutex *sync.Mutex
 
+	Name    string
 	Mana    int
 	Damage  int
 	Health  int
@@ -106,11 +107,12 @@ type Minion struct {
 	Trigger *Trigger
 }
 
-func NewCard(mana, damage, health int) *Minion {
+func NewCard(name string, mana, damage, health int) *Minion {
 	return &Minion{
 		Id:    uuid.New(),
 		mutex: new(sync.Mutex),
 
+		Name:   name,
 		Mana:   mana,
 		Damage: damage,
 		Health: health,
@@ -161,8 +163,8 @@ type Hand struct {
 func NewHand(items *list.List) *Hand {
 	cards := map[uuid.UUID]Card{}
 	for cur := items.Front(); cur != nil; cur = cur.Next() {
-		card := cur.Value.(*Minion)
-		cards[card.Id] = card
+		card := cur.Value.(Card)
+		cards[card.GetId()] = card
 	}
 	return &Hand{
 		cards: cards,

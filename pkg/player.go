@@ -36,10 +36,13 @@ func NewPlayer(socket *Socket) *Player {
 }
 
 func (p *Player) DrawCards(qty int) []Card {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	out := []Card{}
 	cards := p.deck.Draw(qty)
 	for cur := cards.Front(); cur != nil; cur = cur.Next() {
-		card := cur.Value.(*Minion)
+		card := cur.Value.(Card)
 		p.hand.Add(card)
 		out = append(out, card)
 	}
@@ -51,6 +54,9 @@ func (p *Player) Send(message Response) {
 }
 
 func (p *Player) GetHand() *Hand {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	return p.hand
 }
 
