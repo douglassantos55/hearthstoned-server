@@ -848,7 +848,8 @@
         "ability": {
             "type": "gain_damage",
             "params": { "amount": 1 },
-            "trigger": "turn_started"
+            "trigger": "turn_started",
+            "condition": "current"
         }
     },
     {

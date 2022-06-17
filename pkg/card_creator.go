@@ -125,11 +125,16 @@ func CreateCondition(identifier string) func(card Card, event GameEvent) bool {
 	switch identifier {
 	case "allied":
 		return func(card Card, event GameEvent) bool {
-			dead := event.GetData().(*ActiveMinion)
-			_, exists := dead.player.board.GetMinion(card.GetId())
+			minion := event.GetData().(*ActiveMinion)
+			_, exists := minion.player.board.GetMinion(card.GetId())
 			return exists
 		}
 	case "self":
+		return func(card Card, event GameEvent) bool {
+			played := event.GetData().(Card)
+			return card == played
+		}
+	case "current":
 		return func(card Card, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			player := event.GetData().(*Player)

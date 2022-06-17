@@ -185,7 +185,7 @@ func TestTurnStartedCondition(t *testing.T) {
 			Type:      "gain_damage",
 			Params:    map[string]interface{}{"amount": 1.0},
 			Trigger:   "turn_started",
-			Condition: "self",
+			Condition: "current",
 		},
 	})
 
