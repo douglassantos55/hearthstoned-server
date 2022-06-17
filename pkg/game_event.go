@@ -5,13 +5,13 @@ import (
 	"sync"
 )
 
-type GameEventType = int
+type GameEventType = string
 
 const (
-	MinionDamagedEvent GameEventType = iota
-	MinionDestroyedEvent
-	CardPlayedEvent
-	TurnStartedEvent
+	MinionDamagedEvent   GameEventType = "minion_damaged"
+	MinionDestroyedEvent GameEventType = "minion_destroyed"
+	CardPlayedEvent      GameEventType = "card_played"
+	TurnStartedEvent     GameEventType = "turn_started"
 )
 
 // Listener takes an event and returns true if it should be removed after

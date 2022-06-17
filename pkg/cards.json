@@ -1,0 +1,36 @@
+[
+    {
+        "type": "minion",
+        "name": "Crazy Shirtless Dude",
+        "mana": 1,
+        "damage": 1,
+        "health": 1,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "turn_started"
+        }
+    },
+    {
+        "type": "minion",
+        "name": "Black Magician of Doom",
+        "mana": 2,
+        "damage": 5,
+        "health": 2,
+        "ability": {
+            "type": "draw_card",
+            "params": { "amount": 1 },
+            "trigger": "minion_destroyed",
+            "condition": "allied"
+        }
+    },
+    {
+        "type": "spell",
+        "name": "Unlucky",
+        "mana": 2,
+        "ability": {
+            "type": "gain_mana",
+            "params": { "amount": 4 }
+        }
+    }
+]
