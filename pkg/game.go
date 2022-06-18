@@ -68,6 +68,8 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 		dispatcher.Subscribe(MinionDestroyedEvent, player.NotifyDestroyed)
 		dispatcher.Subscribe(CardPlayedEvent, player.NotifyCardPlayed)
 		dispatcher.Subscribe(TurnStartedEvent, player.NotifyTurnStarted)
+		dispatcher.Subscribe(ManaGainedEvent, player.NotifyManaChanges)
+		dispatcher.Subscribe(DamageIncreasedEvent, player.NotifyAttributeChanges)
 	}
 
 	game := &Game{
@@ -245,13 +247,17 @@ func (g *Game) HandleAbilities(event GameEvent) bool {
 				if minion.Trigger != nil {
 					go g.dispatcher.Subscribe(minion.Trigger.Event, func(event GameEvent) bool {
 						if minion.Trigger.Condition == nil || minion.Trigger.Condition(minion, event) {
-							minion.CastAbility()
+							if event := minion.CastAbility(); event != nil {
+								go g.dispatcher.Dispatch(event)
+							}
 						}
 						// until it dies
 						return minion.Health <= 0
 					})
 				} else {
-					minion.CastAbility()
+					if event := minion.CastAbility(); event != nil {
+						go g.dispatcher.Dispatch(event)
+					}
 				}
 			}
 		} else if spell, ok := card.(*Spell); ok {
@@ -259,7 +265,9 @@ func (g *Game) HandleAbilities(event GameEvent) bool {
 		} else if spell, ok := card.(*TriggerableSpell); ok {
 			go g.dispatcher.Subscribe(spell.Trigger.Event, func(event GameEvent) bool {
 				if spell.Trigger.Condition == nil || spell.Trigger.Condition(spell, event) {
-					spell.Execute(current)
+					if event := spell.Execute(current); event != nil {
+						go g.dispatcher.Dispatch(event)
+					}
 				}
 				return true
 			})

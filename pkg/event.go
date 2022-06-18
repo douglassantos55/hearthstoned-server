@@ -43,6 +43,8 @@ const (
 	CardPlayed        ResponseType = "card_played"
 	MinionDamageTaken ResponseType = "minion_taken_damage"
 	MinionDestroyed   ResponseType = "minion_destroyed"
+	ManaChanged       ResponseType = "mana_changed"
+	AttributeChanged  ResponseType = "attribute_changed"
 )
 
 type StartingHandPayload struct {

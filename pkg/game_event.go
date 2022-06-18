@@ -12,6 +12,8 @@ const (
 	MinionDestroyedEvent GameEventType = "minion_destroyed"
 	CardPlayedEvent      GameEventType = "card_played"
 	TurnStartedEvent     GameEventType = "turn_started"
+	ManaGainedEvent      GameEventType = "mana_gained"
+	DamageIncreasedEvent GameEventType = "damage_increased"
 )
 
 // Listener takes an event and returns true if it should be removed after
@@ -49,11 +51,12 @@ func (d *GameDispatcher) Dispatch(event GameEvent) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	listeners := d.listeners[event.GetType()]
-	for cur := listeners.Front(); cur != nil; cur = cur.Next() {
-		listener := cur.Value.(Listener)
-		if listener(event) {
-			listeners.Remove(cur)
+	if listeners := d.listeners[event.GetType()]; listeners != nil {
+		for cur := listeners.Front(); cur != nil; cur = cur.Next() {
+			listener := cur.Value.(Listener)
+			if listener(event) {
+				listeners.Remove(cur)
+			}
 		}
 	}
 }
@@ -138,4 +141,28 @@ func (t TurnStarted) GetType() GameEventType {
 type Trigger struct {
 	Event     GameEventType
 	Condition func(card Card, event GameEvent) bool // Determines whether this trigger should be activated
+}
+
+type ManaGained struct {
+	Player *Player
+}
+
+func (m ManaGained) GetData() interface{} {
+	return m.Player
+}
+
+func (m ManaGained) GetType() GameEventType {
+	return ManaGainedEvent
+}
+
+type DamageIncreased struct {
+	Minion *Minion
+}
+
+func (d DamageIncreased) GetData() interface{} {
+	return d.Minion
+}
+
+func (m DamageIncreased) GetType() GameEventType {
+	return DamageIncreasedEvent
 }

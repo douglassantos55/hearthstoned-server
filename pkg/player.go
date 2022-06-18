@@ -155,6 +155,24 @@ func (p *Player) NotifyCardPlayed(event GameEvent) bool {
 	return false
 }
 
+func (p *Player) NotifyManaChanges(event GameEvent) bool {
+	player := event.GetData().(*Player)
+	go p.Send(Response{
+		Type:    ManaChanged,
+		Payload: player,
+	})
+	return false
+}
+
+func (p *Player) NotifyAttributeChanges(event GameEvent) bool {
+	minion := event.GetData().(*Minion)
+	go p.Send(Response{
+		Type:    AttributeChanged,
+		Payload: minion,
+	})
+	return false
+}
+
 func (p *Player) NotifyTurnStarted(event GameEvent) bool {
 	player := event.GetData().(*Player)
 

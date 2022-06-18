@@ -13,7 +13,7 @@ type Card interface {
 }
 
 type Ability interface {
-	Cast()
+	Cast() GameEvent
 	SetTarget(target interface{})
 }
 
@@ -44,8 +44,12 @@ func (g *GainMana) SetTarget(target interface{}) {
 	g.player = target.(*Player)
 }
 
-func (g *GainMana) Cast() {
+func (g *GainMana) Cast() GameEvent {
 	g.player.GainMana(g.amount)
+
+	return &ManaGained{
+		Player: g.player,
+	}
 }
 
 type GainDamage struct {
@@ -59,8 +63,9 @@ func GainDamageAbility(amount int) *GainDamage {
 	}
 }
 
-func (g *GainDamage) Cast() {
+func (g *GainDamage) Cast() GameEvent {
 	g.minion.GainDamage(g.amount)
+	return &DamageIncreased{Minion: g.minion}
 }
 
 func (g *GainDamage) SetTarget(target interface{}) {
@@ -90,9 +95,9 @@ func (s *Spell) GetMana() int {
 	return s.Mana
 }
 
-func (s *Spell) Execute(caster *Player) {
+func (s *Spell) Execute(caster *Player) GameEvent {
 	s.Ability.SetTarget(caster)
-	s.Ability.Cast()
+	return s.Ability.Cast()
 }
 
 type Minion struct {
@@ -131,9 +136,9 @@ func (m *Minion) HasAbility() bool {
 	return m.Ability != nil
 }
 
-func (m *Minion) CastAbility() {
+func (m *Minion) CastAbility() GameEvent {
 	m.Ability.SetTarget(m)
-	m.Ability.Cast()
+	return m.Ability.Cast()
 }
 
 func (m *Minion) SetAbility(trigger *Trigger, ability Ability) {
