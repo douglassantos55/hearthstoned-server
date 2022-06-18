@@ -20,7 +20,7 @@ func DequeueEvent(player *Socket) Event {
 }
 
 func TestQueuesPlayer(t *testing.T) {
-	player := NewSocket()
+	player := NewSocket(nil)
 	manager := NewQueueManager()
 
 	// process a queue up event
@@ -44,7 +44,7 @@ func TestQueuesPlayer(t *testing.T) {
 }
 
 func TestIgnoresOtherEvents(t *testing.T) {
-	player := NewSocket()
+	player := NewSocket(nil)
 	manager := NewQueueManager()
 
 	// process an invalid event type
@@ -67,8 +67,8 @@ func TestMatchFound(t *testing.T) {
 	manager := NewQueueManager()
 
 	// queue two players
-	manager.Process(QueueUpEvent(NewSocket()))
-	event := manager.Process(QueueUpEvent(NewSocket()))
+	manager.Process(QueueUpEvent(NewSocket(nil)))
+	event := manager.Process(QueueUpEvent(NewSocket(nil)))
 
 	// expect create match event from manager
 	if event.Type != CreateMatch {
@@ -89,7 +89,7 @@ func TestMatchFound(t *testing.T) {
 }
 
 func TestDequeuesPlayer(t *testing.T) {
-	player := NewSocket()
+	player := NewSocket(nil)
 	manager := NewQueueManager()
 
 	// queue a player

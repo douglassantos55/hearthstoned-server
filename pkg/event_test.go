@@ -3,7 +3,7 @@ package pkg
 import "testing"
 
 func TestGainManaEvent(t *testing.T) {
-	socket := NewSocket()
+	socket := NewSocket(nil)
 	player := NewPlayer(socket)
 	dispatcher := NewGameDispatcher()
 	dispatcher.Subscribe(ManaGainedEvent, player.NotifyManaChanges)
@@ -22,7 +22,7 @@ func TestGainManaEvent(t *testing.T) {
 }
 
 func TestAttributeChangedEvent(t *testing.T) {
-	socket := NewSocket()
+	socket := NewSocket(nil)
 	player := NewPlayer(socket)
 	minion := NewCard("test", 1, 1, 1)
 	dispatcher := NewGameDispatcher()

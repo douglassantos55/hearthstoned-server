@@ -26,8 +26,8 @@ func DiscardCardsEvent(player *Socket, cardIds []string, gameId string) Event {
 }
 
 func TestCreateGame(t *testing.T) {
-	p1 := NewSocket()
-	p2 := NewSocket()
+	p1 := NewSocket(nil)
+	p2 := NewSocket(nil)
 
 	manager := NewGameManager()
 
@@ -76,8 +76,8 @@ func TestCreateGame(t *testing.T) {
 }
 
 func TestDiscardStartingHand(t *testing.T) {
-	p1 := NewSocket()
-	p2 := NewSocket()
+	p1 := NewSocket(nil)
+	p2 := NewSocket(nil)
 
 	manager := NewGameManager()
 
@@ -125,8 +125,8 @@ func TestDiscardStartingHand(t *testing.T) {
 }
 
 func TestDiscardTimeout(t *testing.T) {
-	p1 := NewSocket()
-	p2 := NewSocket()
+	p1 := NewSocket(nil)
+	p2 := NewSocket(nil)
 
 	manager := NewGameManager()
 
@@ -182,8 +182,8 @@ func TestDiscardTimeout(t *testing.T) {
 }
 
 func TestTurnTimer(t *testing.T) {
-	p1 := NewSocket()
-	p2 := NewSocket()
+	p1 := NewSocket(nil)
+	p2 := NewSocket(nil)
 
 	game := NewGame([]*Socket{p1, p2}, 100*time.Millisecond)
 	game.StartTurn()
@@ -215,8 +215,8 @@ func TestTurnTimer(t *testing.T) {
 func TestStartTurnWhenBothReady(t *testing.T) {
 	manager := NewGameManager()
 
-	p1 := NewSocket()
-	p2 := NewSocket()
+	p1 := NewSocket(nil)
+	p2 := NewSocket(nil)
 
 	game := manager.CreateGame([]*Socket{p1, p2})
 	game.ChooseStartingHand(100 * time.Millisecond)
@@ -266,8 +266,8 @@ func TestStartTurnWhenBothReady(t *testing.T) {
 }
 
 func TestPassTurn(t *testing.T) {
-	p1 := NewSocket()
-	p2 := NewSocket()
+	p1 := NewSocket(nil)
+	p2 := NewSocket(nil)
 
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 	game.StartTurn()
@@ -297,8 +297,8 @@ func TestPassTurn(t *testing.T) {
 }
 
 func TestRefillsManaOnTurnStart(t *testing.T) {
-	p1 := NewSocket()
-	p2 := NewSocket()
+	p1 := NewSocket(nil)
+	p2 := NewSocket(nil)
 
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 	game.StartTurn()

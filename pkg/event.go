@@ -8,6 +8,10 @@ type Event struct {
 	Payload interface{}
 }
 
+type EventHandler interface {
+	Process(event Event) *Event
+}
+
 type EventType string
 
 const (
