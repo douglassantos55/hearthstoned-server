@@ -55,13 +55,15 @@ func (m *MatchManager) Process(event Event) *Event {
 			m.CreateMatch(players)
 		}
 	case MatchConfirmed:
-		matchId := event.Payload.(uuid.UUID)
-		event := m.ConfirmMatch(matchId, event.Player)
-		return event
+		if matchId, err := uuid.Parse(event.Payload.(string)); err == nil {
+			event := m.ConfirmMatch(matchId, event.Player)
+			return event
+		}
 	case MatchDeclined:
-		matchId := event.Payload.(uuid.UUID)
-		event := m.DeclineMatch(matchId)
-		return event
+		if matchId, err := uuid.Parse(event.Payload.(string)); err == nil {
+			event := m.DeclineMatch(matchId)
+			return event
+		}
 	}
 	return nil
 }

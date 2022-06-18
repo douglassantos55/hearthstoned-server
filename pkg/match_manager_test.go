@@ -18,7 +18,7 @@ func MatchConfirmedEvent(player *Socket, matchId uuid.UUID) Event {
 	return Event{
 		Type:    MatchConfirmed,
 		Player:  player,
-		Payload: matchId,
+		Payload: matchId.String(),
 	}
 }
 
@@ -26,7 +26,7 @@ func MatchDeclinedEvent(player *Socket, matchId uuid.UUID) Event {
 	return Event{
 		Type:    MatchDeclined,
 		Player:  player,
-		Payload: matchId,
+		Payload: matchId.String(),
 	}
 }
 
