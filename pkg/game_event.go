@@ -3,6 +3,7 @@ package pkg
 import (
 	"container/list"
 	"sync"
+	"time"
 )
 
 type GameEventType = string
@@ -121,17 +122,22 @@ func (c CardPlacedEvent) GetType() GameEventType {
 }
 
 type TurnStarted struct {
-	player *Player
+	player   *Player
+	duration time.Duration
 }
 
-func NewTurnStartedEvent(player *Player) TurnStarted {
+func NewTurnStartedEvent(player *Player, duration time.Duration) TurnStarted {
 	return TurnStarted{
-		player: player,
+		player:   player,
+		duration: duration,
 	}
 }
 
 func (t TurnStarted) GetData() interface{} {
-	return t.player
+	return map[string]interface{}{
+		"Player":   t.player,
+		"Duration": t.duration,
+	}
 }
 
 func (t TurnStarted) GetType() GameEventType {

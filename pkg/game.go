@@ -21,12 +21,13 @@ type Game struct {
 	dispatcher   Dispatcher
 }
 
-func StartingHandMessage(gameId uuid.UUID, hand *Hand) Response {
+func StartingHandMessage(gameId uuid.UUID, duration time.Duration, hand *Hand) Response {
 	return Response{
 		Type: StartingHand,
 		Payload: StartingHandPayload{
-			Hand:   hand,
-			GameId: gameId,
+			Duration: duration,
+			Hand:     hand.GetCards(),
+			GameId:   gameId,
 		},
 	}
 }
@@ -97,7 +98,7 @@ func (g *Game) ChooseStartingHand(duration time.Duration) {
 		player.DrawCards(INITIAL_HAND_LENGTH)
 
 		// return starting hand responses to each player
-		go player.Send(StartingHandMessage(g.Id, player.GetHand()))
+		go player.Send(StartingHandMessage(g.Id, duration, player.GetHand()))
 	}
 
 	// start timer
@@ -132,7 +133,7 @@ func (g *Game) StartTurn() {
 
 	go g.StartTimer(g.turnDuration)
 
-	go g.dispatcher.Dispatch(NewTurnStartedEvent(current))
+	go g.dispatcher.Dispatch(NewTurnStartedEvent(current, g.turnDuration))
 }
 
 func (g *Game) NextPlayer() *Player {
@@ -174,7 +175,7 @@ func (g *Game) Discard(cardIds []uuid.UUID, socket *Socket) {
 		// return wait other players response
 		go player.Send(Response{
 			Type:    WaitOtherPlayers,
-			Payload: player.GetHand(),
+			Payload: player.GetHand().GetCards(),
 		})
 	}
 

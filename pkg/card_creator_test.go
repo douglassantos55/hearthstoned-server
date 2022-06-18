@@ -1,6 +1,9 @@
 package pkg
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestCreateMinion(t *testing.T) {
 	card, _ := CreateCard(CardData{
@@ -204,7 +207,7 @@ func TestTurnStartedCondition(t *testing.T) {
 		return true
 	})
 
-	dispatcher.Dispatch(NewTurnStartedEvent(player))
+	dispatcher.Dispatch(NewTurnStartedEvent(player, time.Second))
 
 	if minion.GetDamage() != 2 {
 		t.Errorf("Expected %v damage, got %v", 2, minion.GetDamage())

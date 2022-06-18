@@ -137,7 +137,8 @@ func CreateCondition(identifier string) func(card Card, event GameEvent) bool {
 	case "current":
 		return func(card Card, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
-			player := event.GetData().(*Player)
+			data := event.GetData().(map[string]interface{})
+			player := data["Player"].(*Player)
 			return minion.player == player
 		}
 	case "opponent":

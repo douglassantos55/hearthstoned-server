@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -174,12 +175,15 @@ func (p *Player) NotifyAttributeChanges(event GameEvent) bool {
 }
 
 func (p *Player) NotifyTurnStarted(event GameEvent) bool {
-	player := event.GetData().(*Player)
+	data := event.GetData().(map[string]interface{})
+	player := data["Player"].(*Player)
+	duration := data["Duration"].(time.Duration)
 
 	if player == p {
 		go p.Send(Response{
 			Type: StartTurn,
 			Payload: TurnPayload{
+				Duration:    duration,
 				Cards:       player.hand.GetCards(),
 				Mana:        player.GetMana(),
 				CardsInHand: player.hand.Length(),
@@ -190,6 +194,7 @@ func (p *Player) NotifyTurnStarted(event GameEvent) bool {
 			Type: WaitTurn,
 			Payload: TurnPayload{
 				Mana:        player.GetMana(),
+				Duration:    duration,
 				CardsInHand: player.hand.Length(),
 			},
 		})

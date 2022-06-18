@@ -1,11 +1,15 @@
 package pkg
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Event struct {
-	Type    EventType
-	Player  *Socket
-	Payload interface{}
+	Type    EventType   `json:"type"`
+	Player  *Socket     `json:"player"`
+	Payload interface{} `json:"payload"`
 }
 
 type EventHandler interface {
@@ -28,8 +32,8 @@ const (
 )
 
 type Response struct {
-	Type    ResponseType
-	Payload interface{}
+	Type    ResponseType `json:"type"`
+	Payload interface{}  `json:"payload"`
 }
 
 type ResponseType string
@@ -52,8 +56,9 @@ const (
 )
 
 type StartingHandPayload struct {
-	GameId uuid.UUID
-	Hand   *Hand
+	GameId   uuid.UUID     `json:"game_id"`
+	Duration time.Duration `json:"duration"`
+	Hand     []Card        `json:"hand"`
 }
 
 type CardDiscardedPayload struct {
@@ -62,10 +67,11 @@ type CardDiscardedPayload struct {
 }
 
 type TurnPayload struct {
-	GameId      uuid.UUID
-	Mana        int
-	CardsInHand int
-	Cards       []Card
+	GameId      uuid.UUID     `json:"game_id"`
+	Mana        int           `json:"mana"`
+	Duration    time.Duration `json:"duration"`
+	CardsInHand int           `json:"cards_in_hand"`
+	Cards       []Card        `json:"cards"`
 }
 
 type PlayCardPayload struct {
