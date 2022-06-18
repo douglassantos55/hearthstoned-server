@@ -42,8 +42,8 @@ func TestCreateGame(t *testing.T) {
 		}
 
 		payload := response.Payload.(StartingHandPayload)
-		if payload.Hand.Length() != INITIAL_HAND_LENGTH {
-			t.Errorf("Expected %v, got %v", INITIAL_HAND_LENGTH, payload.Hand.Length())
+		if len(payload.Hand) != INITIAL_HAND_LENGTH {
+			t.Errorf("Expected %v, got %v", INITIAL_HAND_LENGTH, len(payload.Hand))
 		}
 		if payload.GameId == uuid.Nil {
 			t.Errorf("Expected game id, got %v", payload.GameId)
@@ -59,8 +59,8 @@ func TestCreateGame(t *testing.T) {
 		}
 
 		payload := response.Payload.(StartingHandPayload)
-		if payload.Hand.Length() != INITIAL_HAND_LENGTH {
-			t.Errorf("Expected %v, got %v", INITIAL_HAND_LENGTH, payload.Hand.Length())
+		if len(payload.Hand) != INITIAL_HAND_LENGTH {
+			t.Errorf("Expected %v, got %v", INITIAL_HAND_LENGTH, len(payload.Hand))
 		}
 		if payload.GameId == uuid.Nil {
 			t.Errorf("Expected game id, got %v", payload.GameId)
@@ -89,7 +89,7 @@ func TestDiscardStartingHand(t *testing.T) {
 	payload := response.Payload.(StartingHandPayload)
 
 	// process discard event on one of the cards
-	discarded := payload.Hand.Get(2)
+	discarded := payload.Hand[2]
 	manager.Process(DiscardCardsEvent(
 		p1,
 		[]string{discarded.GetId().String()},
@@ -106,13 +106,15 @@ func TestDiscardStartingHand(t *testing.T) {
 		}
 
 		// expect a new card to replace the old one
-		newHand := response.Payload.(*Hand)
-		if newHand.Length() != INITIAL_HAND_LENGTH {
-			t.Errorf("Expected %v, got %v", INITIAL_HAND_LENGTH, newHand.Length())
+		newHand := response.Payload.([]Card)
+		if len(newHand) != INITIAL_HAND_LENGTH {
+			t.Errorf("Expected %v, got %v", INITIAL_HAND_LENGTH, len(newHand))
 		}
 
-		if newHand.Find(discarded.GetId()) != nil {
-			t.Error("Expected card to be discarded")
+		for _, card := range newHand {
+			if card.GetId() == discarded.GetId() {
+				t.Error("Expected card to be discarded")
+			}
 		}
 	}
 

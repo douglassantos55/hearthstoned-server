@@ -39,11 +39,16 @@ func TestPlayCard(t *testing.T) {
 	<-p2.Outgoing // wait turn
 
 	// make sure it can get played
-	played := payload.Hand.Get(0).(*Minion)
+	played := payload.Hand[0].(*Minion)
 	played.Mana = 1
 
 	// play a card
 	manager.Process(PlayCardEvent(p1, game.Id, played.Id))
+
+	player := game.players[p1]
+	if player.hand.Length() != 3 {
+		t.Errorf("Expected %v cards in hand, got %v", 3, player.hand.Length())
+	}
 
 	select {
 	case <-time.After(100 * time.Millisecond):
@@ -90,7 +95,7 @@ func TestNotEnoughMana(t *testing.T) {
 	<-p2.Outgoing // wait turn
 
 	// play a card with mana > 1
-	played := payload.Hand.Get(0).(*Minion)
+	played := payload.Hand[0].(*Minion)
 	played.Mana = 5
 	game.PlayCard(played.Id, p1)
 
@@ -128,7 +133,7 @@ func TestCardNotFound(t *testing.T) {
 	<-p2.Outgoing // wait turn
 
 	// play a nonexisting card for player
-	played := payload.Hand.Get(0).(*Minion)
+	played := payload.Hand[0].(*Minion)
 	played.Mana = 1
 	game.PlayCard(played.GetId(), p1)
 
@@ -380,7 +385,8 @@ func TestTriggerableMinionAbility(t *testing.T) {
 	trigger := &Trigger{
 		Event: TurnStartedEvent,
 		Condition: func(card Card, event GameEvent) bool {
-			player := event.GetData().(*Player)
+			data := event.GetData().(map[string]interface{})
+			player := data["Player"].(*Player)
 			minion := card.(*ActiveMinion)
 			return player == minion.player
 		},
