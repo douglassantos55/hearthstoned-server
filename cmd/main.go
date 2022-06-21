@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -14,5 +15,5 @@ func main() {
 	server.RegisterHandler(pkg.NewMatchManager(30 * time.Second))
 
 	http.HandleFunc("/", server.HandleConnection)
-	http.ListenAndServe("0.0.0.0:8080", nil)
+	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
 }

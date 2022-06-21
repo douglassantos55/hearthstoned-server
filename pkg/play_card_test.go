@@ -23,8 +23,8 @@ func TestPlayCard(t *testing.T) {
 	manager := NewGameManager()
 
 	// create game
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	game := manager.CreateGame([]*Socket{p1, p2})
 
@@ -78,8 +78,8 @@ func TestPlayCard(t *testing.T) {
 }
 
 func TestNotEnoughMana(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	// create game
 	game := NewGame([]*Socket{p1, p2}, time.Second)
@@ -115,8 +115,8 @@ func TestNotEnoughMana(t *testing.T) {
 }
 
 func TestCardNotFound(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	// create game
 	game := NewGame([]*Socket{p1, p2}, time.Second)
@@ -153,7 +153,7 @@ func TestCardNotFound(t *testing.T) {
 }
 
 func TestPlacesOnBoard(t *testing.T) {
-	player := NewPlayer(NewSocket(nil))
+	player := NewPlayer(NewTestSocket())
 
 	player.GainMana(1)
 	player.RefillMana()
@@ -197,8 +197,8 @@ func TestFullBoard(t *testing.T) {
 }
 
 func TestMagicCard(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 	game.StartTurn()
@@ -223,8 +223,8 @@ func TestMagicCard(t *testing.T) {
 }
 
 func TestTriggeredSpell(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 	game.StartTurn()
@@ -263,8 +263,8 @@ func TestTriggeredSpell(t *testing.T) {
 }
 
 func TestTriggeredSpellOnce(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 	game.StartTurn()
@@ -312,8 +312,8 @@ func TestTriggeredSpellOnce(t *testing.T) {
 }
 
 func TestMagicFullBoard(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 	game.StartTurn()
 
@@ -342,8 +342,8 @@ func TestMagicFullBoard(t *testing.T) {
 }
 
 func TestMinionAbility(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 
 	// create a minion
@@ -373,8 +373,8 @@ func TestMinionAbility(t *testing.T) {
 }
 
 func TestTriggerableMinionAbility(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	game := NewGame([]*Socket{p1, p2}, time.Second)
 

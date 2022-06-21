@@ -43,7 +43,7 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 			select {
 			case event := <-socket.Incoming:
 				event.Player = socket
-				go s.ProcessEvent(event)
+				s.ProcessEvent(event)
 			}
 		}
 	}()

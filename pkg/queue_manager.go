@@ -26,7 +26,7 @@ func NewQueueManager() *QueueManager {
 }
 
 func (q *QueueManager) Process(event Event) *Event {
-    fmt.Printf("event: %v\n", event)
+	fmt.Printf("event: %v\n", event)
 	switch event.Type {
 	case QueueUp:
 		q.AddToQueue(event.Player)

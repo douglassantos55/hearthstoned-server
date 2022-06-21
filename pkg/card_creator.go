@@ -13,7 +13,7 @@ func GetCards() []Card {
 		return cards
 	}
 
-	data, err := loadCards("cards.json")
+	data, err := loadCards("../cards.json")
 	if err != nil {
 		return cards
 	}

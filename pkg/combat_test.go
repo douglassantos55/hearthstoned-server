@@ -8,8 +8,8 @@ import (
 func TestAttackEvent(t *testing.T) {
 	manager := NewGameManager()
 
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	game := manager.CreateGame([]*Socket{p1, p2})
 	game.StartTurn()

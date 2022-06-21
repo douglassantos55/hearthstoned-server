@@ -5,9 +5,9 @@ import "testing"
 func TestAddToQueue(t *testing.T) {
 	queue := NewQueue()
 
-	queue.Queue(NewSocket(nil))
-	queue.Queue(NewSocket(nil))
-	queue.Queue(NewSocket(nil))
+	queue.Queue(NewTestSocket())
+	queue.Queue(NewTestSocket())
+	queue.Queue(NewTestSocket())
 
 	if queue.Length() != 3 {
 		t.Errorf("Expected %v, got %v", 3, queue.Length())
@@ -18,12 +18,12 @@ func TestAddToQueue(t *testing.T) {
 }
 
 func TestRemoveFromQueue(t *testing.T) {
-	p1 := NewSocket(nil)
+	p1 := NewTestSocket()
 	queue := NewQueue()
 
 	queue.Queue(p1)
-	queue.Queue(NewSocket(nil))
-	queue.Queue(NewSocket(nil))
+	queue.Queue(NewTestSocket())
+	queue.Queue(NewTestSocket())
 
 	got := queue.Dequeue()
 
@@ -40,7 +40,7 @@ func TestRemoveFromQueue(t *testing.T) {
 
 func TestAddDuplicates(t *testing.T) {
 	queue := NewQueue()
-	player := NewSocket(nil)
+	player := NewTestSocket()
 
 	queue.Queue(player)
 	queue.Queue(player)
@@ -56,11 +56,11 @@ func TestAddDuplicates(t *testing.T) {
 
 func TestRemoveParticularPlayer(t *testing.T) {
 	queue := NewQueue()
-	p2 := NewSocket(nil)
+	p2 := NewTestSocket()
 
-	queue.Queue(NewSocket(nil))
+	queue.Queue(NewTestSocket())
 	queue.Queue(p2)
-	queue.Queue(NewSocket(nil))
+	queue.Queue(NewTestSocket())
 
 	queue.Remove(p2)
 	if queue.Length() != 2 {

@@ -53,7 +53,7 @@ func TestCreateSpell(t *testing.T) {
 		t.Errorf("expected %v mana, got %v", 2, spell.GetMana())
 	}
 
-	player := NewPlayer(NewSocket(nil))
+	player := NewPlayer(NewTestSocket())
 	spell.Execute(player)
 
 	if player.GetTotalMana() != 4 {
@@ -166,7 +166,7 @@ func TestMinionWithCondition(t *testing.T) {
 		return true
 	})
 
-	player := NewPlayer(NewSocket(nil))
+	player := NewPlayer(NewTestSocket())
 	deadMinion := NewMinion(NewCard("", 1, 1, 2), player)
 
 	player.PlayCard(minion)
@@ -196,7 +196,7 @@ func TestTurnStartedCondition(t *testing.T) {
 		t.Error(err)
 	}
 
-	player := NewPlayer(NewSocket(nil))
+	player := NewPlayer(NewTestSocket())
 	minion := NewMinion(card.(*Minion), player)
 
 	dispatcher := NewGameDispatcher()

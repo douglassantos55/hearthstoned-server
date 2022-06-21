@@ -300,9 +300,6 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 						// send minion destroyed message to players
 						go g.dispatcher.Dispatch(NewDestroyedEvent(attacker))
 					} else {
-						// after attacking, minion gets exhausted
-						attacker.SetState(Exhausted{})
-
 						// send damage taken message to players
 						go g.dispatcher.Dispatch(NewDamageEvent(attacker))
 					}
@@ -313,6 +310,9 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 					// send minion destroyed message to players
 					go g.dispatcher.Dispatch(NewDestroyedEvent(defender))
 				}
+
+				// after attacking, minion gets exhausted
+				attacker.SetState(Exhausted{})
 			}
 		}
 	}

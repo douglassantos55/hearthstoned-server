@@ -30,6 +30,15 @@ func NewSocket(conn *websocket.Conn) *Socket {
 	return socket
 }
 
+func NewTestSocket() *Socket {
+	return &Socket{
+		Id: uuid.New(),
+
+		Incoming: make(chan Event),
+		Outgoing: make(chan Response),
+	}
+}
+
 func (p *Socket) Send(message Response) {
 	p.Outgoing <- message
 }

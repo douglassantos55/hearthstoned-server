@@ -31,8 +31,8 @@ func MatchDeclinedEvent(player *Socket, matchId uuid.UUID) Event {
 }
 
 func TestCreatesMatch(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	manager := NewMatchManager(2 * time.Second)
 
@@ -70,8 +70,8 @@ func TestCreatesMatch(t *testing.T) {
 }
 
 func TestTimeout(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	manager := NewMatchManager(100 * time.Millisecond)
 
@@ -118,8 +118,8 @@ func TestTimeout(t *testing.T) {
 }
 
 func TestStartGame(t *testing.T) {
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 	manager := NewMatchManager(100 * time.Millisecond)
 
 	// create a match
@@ -165,8 +165,8 @@ func TestStartGame(t *testing.T) {
 func TestDeclineMatch(t *testing.T) {
 	manager := NewMatchManager(time.Second)
 
-	p1 := NewSocket(nil)
-	p2 := NewSocket(nil)
+	p1 := NewTestSocket()
+	p2 := NewTestSocket()
 
 	// create a match
 	manager.CreateMatch([]*Socket{p1, p2})
