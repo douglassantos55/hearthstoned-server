@@ -150,4 +150,65 @@ func TestCombat(t *testing.T) {
 			t.Errorf("Expected %v health, got %v", MAX_HEALTH-3, player.Health)
 		}
 	})
+
+	t.Run("game over", func(t *testing.T) {
+		p1 := NewTestSocket()
+		p2 := NewTestSocket()
+
+		manager := NewGameManager()
+		game := manager.CreateGame([]*Socket{p1, p2})
+
+		player := game.players[p2]
+
+		attacker := NewCard("", 1, 30, 1)
+		_, err := game.players[p1].PlayCard(attacker)
+
+		if err != nil {
+			t.Error("Should not received this error")
+		}
+
+		game.StartTurn()
+
+		<-p1.Outgoing
+		<-p2.Outgoing
+
+		manager.Process(Event{
+			Type:   AttackPlayer,
+			Player: p1,
+			Payload: CombatPayload{
+				GameId:   game.Id.String(),
+				Attacker: attacker.Id.String(),
+				Defender: player.Id.String(),
+			},
+		})
+
+		<-p1.Outgoing // damage taken
+		<-p2.Outgoing // damage taken
+
+		if player.Health != 0 {
+			t.Errorf("Expected %v health, got %v", 0, player.Health)
+		}
+
+		if _, ok := manager.games[game.Id]; ok {
+			t.Errorf("Expected game to be removed, got %v", manager.games)
+		}
+
+		select {
+		case <-time.After(500 * time.Millisecond):
+			t.Error("Expected game over response")
+		case response := <-p1.Outgoing:
+			if response.Type != Win {
+				t.Errorf("Expected %v, got %v", Win, response.Type)
+			}
+		}
+
+		select {
+		case <-time.After(500 * time.Millisecond):
+			t.Error("Expected game over response")
+		case response := <-p2.Outgoing:
+			if response.Type != Loss {
+				t.Errorf("Expected %v, got %v", Loss, response.Type)
+			}
+		}
+	})
 }

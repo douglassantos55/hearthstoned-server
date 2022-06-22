@@ -326,7 +326,7 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 	}
 }
 
-func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) {
+func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) bool {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
@@ -337,7 +337,7 @@ func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) {
 			Type:    Error,
 			Payload: "You cannot attack yourself...",
 		})
-		return
+		return false
 	}
 
 	// get player
@@ -353,7 +353,7 @@ func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) {
 			Type:    Error,
 			Payload: "Player not found",
 		})
-		return
+		return false
 	}
 
 	// get minion
@@ -363,7 +363,7 @@ func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) {
 			Type:    Error,
 			Payload: "Minion not found on board",
 		})
-		return
+		return false
 	}
 
 	// reduce player's health
@@ -375,12 +375,24 @@ func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) {
 	// check if dead
 	if player.GetHealth() <= 0 {
 		g.GameOver(current, player)
+		return true
 	}
+
+	return false
 }
 
 func (g *Game) GameOver(winner, loser *Player) {
+	g.StopTimer <- true
+
 	// winner gets win message
+	go winner.Send(Response{
+		Type: Win,
+	})
+
 	// loser gets loss message
+	go loser.Send(Response{
+		Type: Loss,
+	})
 }
 
 // Searches for a minion on all players board, except current player

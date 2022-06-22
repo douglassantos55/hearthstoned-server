@@ -55,6 +55,8 @@ const (
 	ManaChanged       ResponseType = "mana_changed"
 	AttributeChanged  ResponseType = "attribute_changed"
 	PlayerDamageTaken ResponseType = "player_damage_taken"
+	Win               ResponseType = "win"
+	Loss              ResponseType = "loss"
 )
 
 type StartingHandPayload struct {
