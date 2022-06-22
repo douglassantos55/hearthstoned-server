@@ -69,6 +69,19 @@ func (g *GameManager) Process(event Event) *Event {
 				}
 			}
 		}
+	case AttackPlayer:
+		var payload CombatPayload
+		if err := mapstructure.Decode(event.Payload, &payload); err == nil {
+			if gameId, err := uuid.Parse(payload.GameId); err == nil {
+				if attacker, err := uuid.Parse(payload.Attacker); err == nil {
+					if defender, err := uuid.Parse(payload.Defender); err == nil {
+						if game, ok := g.games[gameId]; ok {
+							game.AttackPlayer(attacker, defender, event.Player)
+						}
+					}
+				}
+			}
+		}
 	}
 	return nil
 }

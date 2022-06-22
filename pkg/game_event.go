@@ -15,6 +15,7 @@ const (
 	TurnStartedEvent     GameEventType = "turn_started"
 	ManaGainedEvent      GameEventType = "mana_gained"
 	DamageIncreasedEvent GameEventType = "damage_increased"
+	PlayerDamagedEvent   GameEventType = "player_damaged"
 )
 
 // Listener takes an event and returns true if it should be removed after
@@ -171,4 +172,22 @@ func (d DamageIncreased) GetData() interface{} {
 
 func (m DamageIncreased) GetType() GameEventType {
 	return DamageIncreasedEvent
+}
+
+type PlayerDamaged struct {
+	player *Player
+}
+
+func NewPlayerDamagedEvent(player *Player) PlayerDamaged {
+	return PlayerDamaged{
+		player: player,
+	}
+}
+
+func (d PlayerDamaged) GetData() interface{} {
+	return d.player
+}
+
+func (m PlayerDamaged) GetType() GameEventType {
+	return PlayerDamagedEvent
 }

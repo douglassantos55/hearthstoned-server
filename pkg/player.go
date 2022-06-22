@@ -10,11 +10,15 @@ import (
 )
 
 const MAX_MANA = 10
+const MAX_HEALTH = 30
 const MAX_MINIONS = 7
 
 type Player struct {
-	currMana  int
-	totalMana int
+	Id uuid.UUID
+
+	Health  int
+	Mana    int
+	MaxMana int
 
 	mutex  *sync.Mutex
 	board  *Board
@@ -25,8 +29,11 @@ type Player struct {
 
 func NewPlayer(socket *Socket) *Player {
 	return &Player{
-		totalMana: 0,
-		currMana:  0,
+		Id: uuid.New(),
+
+		MaxMana: 0,
+		Mana:    0,
+		Health:  MAX_HEALTH,
 
 		mutex:  new(sync.Mutex),
 		board:  NewBoard(),
@@ -76,13 +83,13 @@ func (p *Player) AddToDeck(card Card) {
 func (p *Player) RefillMana() {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	p.currMana = p.totalMana
+	p.Mana = p.MaxMana
 }
 
 func (p *Player) AddMana(qty int) {
-	p.currMana += qty
-	if p.currMana > p.totalMana {
-		p.currMana = p.totalMana
+	p.Mana += qty
+	if p.Mana > p.MaxMana {
+		p.Mana = p.MaxMana
 	}
 }
 
@@ -90,28 +97,40 @@ func (p *Player) GainMana(qty int) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	p.totalMana += qty
-	if p.totalMana > MAX_MANA {
-		p.totalMana = MAX_MANA
+	p.MaxMana += qty
+	if p.MaxMana > MAX_MANA {
+		p.MaxMana = MAX_MANA
 	}
+}
+
+func (p *Player) ReduceHealth(qty int) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.Health -= qty
+}
+
+func (p *Player) GetHealth() int {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	return p.Health
 }
 
 func (p *Player) ReduceMana(qty int) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	p.currMana -= qty
+	p.Mana -= qty
 }
 
 func (p *Player) GetMana() int {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	return p.currMana
+	return p.Mana
 }
 
 func (p *Player) GetTotalMana() int {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	return p.totalMana
+	return p.MaxMana
 }
 
 func (p *Player) PlayCard(card Card) (Card, error) {
@@ -138,6 +157,12 @@ func (p *Player) CardsOnBoardCount() int {
 func (p *Player) NotifyDamage(event GameEvent) bool {
 	minion := event.GetData().(*ActiveMinion)
 	go p.Send(DamageTaken(minion.Minion))
+	return false
+}
+
+func (p *Player) NotifyPlayerDamage(event GameEvent) bool {
+	player := event.GetData().(*Player)
+	go p.Send(PlayerDamagedMessage(player))
 	return false
 }
 

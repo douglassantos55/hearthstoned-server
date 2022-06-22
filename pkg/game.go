@@ -50,6 +50,13 @@ func DamageTaken(card *Minion) Response {
 	}
 }
 
+func PlayerDamagedMessage(player *Player) Response {
+	return Response{
+		Type:    PlayerDamageTaken,
+		Payload: player,
+	}
+}
+
 func MinionDestroyedMessage(card *Minion) Response {
 	return Response{
 		Type:    MinionDestroyed,
@@ -71,6 +78,7 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 		dispatcher.Subscribe(TurnStartedEvent, player.NotifyTurnStarted)
 		dispatcher.Subscribe(ManaGainedEvent, player.NotifyManaChanges)
 		dispatcher.Subscribe(DamageIncreasedEvent, player.NotifyAttributeChanges)
+		dispatcher.Subscribe(PlayerDamagedEvent, player.NotifyPlayerDamage)
 	}
 
 	game := &Game{
@@ -316,6 +324,63 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 			}
 		}
 	}
+}
+
+func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	// validate player
+	current := g.players[socket]
+	if current.Id == playerId {
+		go current.Send(Response{
+			Type:    Error,
+			Payload: "You cannot attack yourself...",
+		})
+		return
+	}
+
+	// get player
+	var player *Player
+	for _, p := range g.players {
+		if p.Id == playerId {
+			player = p
+			break
+		}
+	}
+	if player == nil {
+		go current.Send(Response{
+			Type:    Error,
+			Payload: "Player not found",
+		})
+		return
+	}
+
+	// get minion
+	attacker, ok := current.board.GetMinion(attackerId)
+	if !ok {
+		go current.Send(Response{
+			Type:    Error,
+			Payload: "Minion not found on board",
+		})
+		return
+	}
+
+	// reduce player's health
+	player.ReduceHealth(attacker.GetDamage())
+
+	// send player damage event
+	g.dispatcher.Dispatch(NewPlayerDamagedEvent(player))
+
+	// check if dead
+	if player.GetHealth() <= 0 {
+		g.GameOver(current, player)
+	}
+}
+
+func (g *Game) GameOver(winner, loser *Player) {
+	// winner gets win message
+	// loser gets loss message
 }
 
 // Searches for a minion on all players board, except current player

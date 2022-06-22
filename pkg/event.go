@@ -29,6 +29,7 @@ const (
 	EndTurn        EventType = "end_turn"
 	PlayCard       EventType = "play_card"
 	Attack         EventType = "attack"
+	AttackPlayer   EventType = "attack_player"
 )
 
 type Response struct {
@@ -53,6 +54,7 @@ const (
 	MinionDestroyed   ResponseType = "minion_destroyed"
 	ManaChanged       ResponseType = "mana_changed"
 	AttributeChanged  ResponseType = "attribute_changed"
+	PlayerDamageTaken ResponseType = "player_damage_taken"
 )
 
 type StartingHandPayload struct {
