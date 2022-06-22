@@ -160,6 +160,9 @@ func TestDiscardTimeout(t *testing.T) {
 		if len(payload.Cards) != 4 {
 			t.Errorf("Expected %v cards, got %v", 4, len(payload.Cards))
 		}
+		if payload.OpponentId != uuid.Nil {
+			t.Errorf("Expected no opponent, got %v", payload.OpponentId)
+		}
 	}
 
 	// expect other player to receive wait turn
@@ -179,6 +182,9 @@ func TestDiscardTimeout(t *testing.T) {
 		}
 		if len(payload.Cards) != 0 {
 			t.Errorf("Expected no cards, got %+v", payload.Cards)
+		}
+		if payload.OpponentId == uuid.Nil {
+			t.Errorf("Expected opponent, got %v", payload.OpponentId)
 		}
 	}
 }

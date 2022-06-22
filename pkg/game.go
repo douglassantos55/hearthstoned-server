@@ -32,17 +32,6 @@ func StartingHandMessage(gameId uuid.UUID, duration time.Duration, hand *Hand) R
 	}
 }
 
-func TurnMessage(responseType ResponseType, gameId uuid.UUID, player *Player) Response {
-	return Response{
-		Type: responseType,
-		Payload: TurnPayload{
-			GameId:      gameId,
-			Mana:        player.GetMana(),
-			CardsInHand: player.GetHand().Length(),
-		},
-	}
-}
-
 func DamageTaken(card *Minion) Response {
 	return Response{
 		Type:    MinionDamageTaken,

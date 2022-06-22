@@ -76,6 +76,7 @@ type TurnPayload struct {
 	Duration    time.Duration `json:"duration"`
 	CardsInHand int           `json:"cards_in_hand"`
 	Cards       []Card        `json:"cards"`
+	OpponentId  uuid.UUID     `json:"opponent_id"`
 }
 
 type PlayCardPayload struct {
