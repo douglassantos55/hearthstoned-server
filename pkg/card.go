@@ -213,11 +213,7 @@ func (h *Hand) Find(cardId uuid.UUID) Card {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
-	card := h.cards[cardId]
-	if card != nil {
-		delete(h.cards, cardId)
-	}
-	return card
+	return h.cards[cardId]
 }
 
 func (h *Hand) Remove(card Card) {

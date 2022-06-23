@@ -229,6 +229,9 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 		return
 	}
 
+	// remove card from hand now
+	current.Discard(cardId)
+
 	// dispatch card played event
 	go g.dispatcher.Dispatch(NewCardPlayedEvent(minion))
 }
@@ -242,9 +245,9 @@ func (g *Game) HandleAbilities(event GameEvent) bool {
 
 		if minion, ok := card.(*ActiveMinion); ok {
 			if minion.HasAbility() {
-				if minion.Trigger != nil {
-					go g.dispatcher.Subscribe(minion.Trigger.Event, func(event GameEvent) bool {
-						if minion.Trigger.Condition == nil || minion.Trigger.Condition(minion, event) {
+				if minion.trigger != nil {
+					go g.dispatcher.Subscribe(minion.trigger.Event, func(event GameEvent) bool {
+						if minion.trigger.Condition == nil || minion.trigger.Condition(minion, event) {
 							if event := minion.CastAbility(); event != nil {
 								go g.dispatcher.Dispatch(event)
 							}

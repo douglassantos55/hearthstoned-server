@@ -112,6 +112,11 @@ func TestNotEnoughMana(t *testing.T) {
 			t.Errorf("Expected not enough mana, got %v", payload)
 		}
 	}
+
+	card := game.players[p1].hand.Find(played.GetId())
+	if card == nil {
+		t.Error("Expected card in hand")
+	}
 }
 
 func TestCardNotFound(t *testing.T) {
