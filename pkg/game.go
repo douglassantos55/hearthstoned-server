@@ -345,26 +345,31 @@ func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) bool
 		return false
 	}
 
-	// get minion
-	attacker, ok := current.board.GetMinion(attackerId)
-	if !ok {
-		go current.Send(Response{
-			Type:    Error,
-			Payload: "Minion not found on board",
-		})
-		return false
-	}
+	// check if player has minions on board
+	if player.board.MinionsCount() == 0 {
+		// get minion
+		attacker, ok := current.board.GetMinion(attackerId)
+		if !ok {
+			go current.Send(Response{
+				Type:    Error,
+				Payload: "Minion not found on board",
+			})
+			return false
+		}
 
-	// reduce player's health
-	player.ReduceHealth(attacker.GetDamage())
+		if attacker.CanAttack() {
+			// reduce player's health
+			player.ReduceHealth(attacker.GetDamage())
 
-	// send player damage event
-	g.dispatcher.Dispatch(NewPlayerDamagedEvent(player))
+			// send player damage event
+			g.dispatcher.Dispatch(NewPlayerDamagedEvent(player))
 
-	// check if dead
-	if player.GetHealth() <= 0 {
-		g.GameOver(current, player)
-		return true
+			// check if dead
+			if player.GetHealth() <= 0 {
+				g.GameOver(current, player)
+				return true
+			}
+		}
 	}
 
 	return false

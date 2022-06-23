@@ -151,6 +151,38 @@ func TestCombat(t *testing.T) {
 		}
 	})
 
+	t.Run("attack player with minions on board", func(t *testing.T) {
+		p1 := NewTestSocket()
+		p2 := NewTestSocket()
+
+		manager := NewGameManager()
+		game := manager.CreateGame([]*Socket{p1, p2})
+
+		player := game.players[p2]
+
+		attacker := NewCard("", 1, 3, 1)
+		game.players[p1].PlayCard(attacker)
+
+		defender := NewCard("", 1, 1, 3)
+		game.players[p2].PlayCard(defender)
+
+		game.StartTurn()
+
+		manager.Process(Event{
+			Type:   AttackPlayer,
+			Player: p1,
+			Payload: CombatPayload{
+				GameId:   game.Id.String(),
+				Attacker: attacker.Id.String(),
+				Defender: player.Id.String(),
+			},
+		})
+
+		if player.Health != MAX_HEALTH {
+			t.Errorf("Expected %v health, got %v", MAX_HEALTH, player.Health)
+		}
+	})
+
 	t.Run("game over", func(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
