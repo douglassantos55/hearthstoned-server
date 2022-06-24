@@ -16,6 +16,7 @@ const (
 	ManaGainedEvent      GameEventType = "mana_gained"
 	DamageIncreasedEvent GameEventType = "damage_increased"
 	PlayerDamagedEvent   GameEventType = "player_damaged"
+	StateChangedEvent    GameEventType = "minion_state_changed"
 )
 
 // Listener takes an event and returns true if it should be removed after
@@ -190,4 +191,22 @@ func (d PlayerDamaged) GetData() interface{} {
 
 func (m PlayerDamaged) GetType() GameEventType {
 	return PlayerDamagedEvent
+}
+
+type StateChanged struct {
+	minion *ActiveMinion
+}
+
+func NewStateChangedEvent(minion *ActiveMinion) StateChanged {
+	return StateChanged{
+		minion: minion,
+	}
+}
+
+func (s StateChanged) GetData() interface{} {
+	return s.minion
+}
+
+func (s StateChanged) GetType() GameEventType {
+	return StateChangedEvent
 }

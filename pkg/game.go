@@ -68,6 +68,7 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 		dispatcher.Subscribe(ManaGainedEvent, player.NotifyManaChanges)
 		dispatcher.Subscribe(DamageIncreasedEvent, player.NotifyAttributeChanges)
 		dispatcher.Subscribe(PlayerDamagedEvent, player.NotifyPlayerDamage)
+		dispatcher.Subscribe(StateChangedEvent, player.NotifyAttributeChanges)
 	}
 
 	game := &Game{
@@ -124,7 +125,10 @@ func (g *Game) StartTurn() {
 
 	current.GainMana(1)
 	current.RefillMana()
-	current.board.ActivateAll()
+
+	for _, minion := range current.board.ActivateAll() {
+		go g.dispatcher.Dispatch(NewStateChangedEvent(minion))
+	}
 
 	current.DrawCards(1)
 

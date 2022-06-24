@@ -173,7 +173,14 @@ func (p *Player) NotifyDestroyed(event GameEvent) bool {
 }
 
 func (p *Player) NotifyCardPlayed(event GameEvent) bool {
-	card := event.GetData().(Card)
+	card := event.GetData()
+
+	if minion, ok := card.(*ActiveMinion); ok {
+		card = minion
+	} else if spell, ok := card.(*Spell); ok {
+		card = spell
+	}
+
 	go p.Send(Response{
 		Type:    CardPlayed,
 		Payload: card,
@@ -191,7 +198,7 @@ func (p *Player) NotifyManaChanges(event GameEvent) bool {
 }
 
 func (p *Player) NotifyAttributeChanges(event GameEvent) bool {
-	minion := event.GetData().(*Minion)
+	minion := event.GetData().(*ActiveMinion)
 	go p.Send(Response{
 		Type:    AttributeChanged,
 		Payload: minion,
@@ -259,8 +266,9 @@ func (b *Board) Place(card *ActiveMinion) error {
 	return nil
 }
 
-func (b *Board) ActivateAll() {
+func (b *Board) ActivateAll() map[uuid.UUID]*ActiveMinion {
 	for _, minion := range b.minions {
 		minion.SetState(Active{})
 	}
+	return b.minions
 }

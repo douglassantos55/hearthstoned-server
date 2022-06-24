@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -77,12 +78,12 @@ func TestCreateMinionWithAbility(t *testing.T) {
 
 	minion := card.(*Minion)
 
-	if minion.Trigger == nil {
+	if minion.trigger == nil {
 		t.Error("minion ability should have a trigger")
 	}
 
-	if minion.Trigger.Event != TurnStartedEvent {
-		t.Errorf("Expected %v event, got %v", TurnStartedEvent, minion.Trigger.Event)
+	if minion.trigger.Event != TurnStartedEvent {
+		t.Errorf("Expected %v event, got %v", TurnStartedEvent, minion.trigger.Event)
 	}
 
 	minion.CastAbility()
@@ -150,17 +151,17 @@ func TestMinionWithCondition(t *testing.T) {
 		t.Error("Should have an ability")
 	}
 
-	if minion.Trigger == nil {
+	if minion.trigger == nil {
 		t.Error("Should have a trigger")
 	}
 
-	if minion.Trigger.Condition == nil {
+	if minion.trigger.Condition == nil {
 		t.Error("Expected trigger condition")
 	}
 
 	dispatcher := NewGameDispatcher()
-	dispatcher.Subscribe(minion.Trigger.Event, func(event GameEvent) bool {
-		if minion.Trigger.Condition(minion, event) {
+	dispatcher.Subscribe(minion.trigger.Event, func(event GameEvent) bool {
+		if minion.trigger.Condition(minion, event) {
 			minion.CastAbility()
 		}
 		return true
@@ -201,7 +202,7 @@ func TestTurnStartedCondition(t *testing.T) {
 
 	dispatcher := NewGameDispatcher()
 	dispatcher.Subscribe(TurnStartedEvent, func(event GameEvent) bool {
-		if minion.Trigger.Condition(minion, event) {
+		if minion.trigger.Condition(minion, event) {
 			minion.CastAbility()
 		}
 		return true
@@ -211,5 +212,26 @@ func TestTurnStartedCondition(t *testing.T) {
 
 	if minion.GetDamage() != 2 {
 		t.Errorf("Expected %v damage, got %v", 2, minion.GetDamage())
+	}
+}
+
+func TestJSONWithAbility(t *testing.T) {
+	card, _ := CreateCard(CardData{
+		Type:   "minion",
+		Name:   "Crazy Shirtless Dude",
+		Mana:   1,
+		Damage: 1,
+		Health: 1,
+		Ability: AbilityData{
+			Type:      "gain_damage",
+			Params:    map[string]interface{}{"amount": 1.0},
+			Trigger:   "turn_started",
+			Condition: "current",
+		},
+	})
+
+	_, err := json.Marshal(card)
+	if err != nil {
+		t.Error(err)
 	}
 }

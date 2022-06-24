@@ -2,6 +2,9 @@ package pkg
 
 import (
 	"container/list"
+	"encoding/json"
+	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/google/uuid"
@@ -57,6 +60,13 @@ type GainDamage struct {
 	minion *Minion
 }
 
+func (g *GainDamage) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]string{
+		"Name":        "Gain damage",
+		"Description": fmt.Sprintf("Increase %v damage", g.amount),
+	})
+}
+
 func GainDamageAbility(amount int) *GainDamage {
 	return &GainDamage{
 		amount: amount,
@@ -109,7 +119,7 @@ type Minion struct {
 	Damage  int
 	Health  int
 	Ability Ability
-	Trigger *Trigger
+	trigger *Trigger
 }
 
 func NewCard(name string, mana, damage, health int) *Minion {
@@ -142,7 +152,7 @@ func (m *Minion) CastAbility() GameEvent {
 }
 
 func (m *Minion) SetAbility(trigger *Trigger, ability Ability) {
-	m.Trigger = trigger
+	m.trigger = trigger
 	m.Ability = ability
 }
 
@@ -261,13 +271,16 @@ type ActiveMinion struct {
 	*Minion
 	player *Player
 	state  MinionState
+	State  string
 }
 
 func NewMinion(card *Minion, player *Player) *ActiveMinion {
+	state := Exhausted{}
 	return &ActiveMinion{
 		Minion: card,
 		player: player,
-		state:  Exhausted{},
+		state:  state,
+		State:  reflect.TypeOf(state).Name(),
 	}
 }
 
@@ -285,6 +298,7 @@ func (m *ActiveMinion) GetState() MinionState {
 
 func (m *ActiveMinion) SetState(state MinionState) {
 	m.state = state
+	m.State = reflect.TypeOf(state).Name()
 }
 
 // Reduces minion health and returns wether it survives or not

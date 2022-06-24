@@ -4,42 +4,78 @@
         "type": "minion",
         "mana": 2,
         "damage": 9,
-        "health": 5
+        "health": 5,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "turn_started",
+            "condition": "current"
+        }
     },
     {
         "name": "Conley",
         "type": "minion",
         "mana": 5,
         "damage": 4,
-        "health": 9
+        "health": 9,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "turn_started",
+            "condition": "current"
+        }
     },
     {
         "name": "Lillian",
         "type": "minion",
         "mana": 7,
         "damage": 8,
-        "health": 6
+        "health": 6,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "turn_started",
+            "condition": "current"
+        }
     },
     {
         "name": "Bruce",
         "type": "minion",
         "mana": 8,
         "damage": 2,
-        "health": 6
+        "health": 6,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "turn_started",
+            "condition": "current"
+        }
     },
     {
         "name": "Carroll",
         "type": "minion",
         "mana": 1,
         "damage": 5,
-        "health": 4
+        "health": 4,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "turn_started",
+            "condition": "current"
+        }
     },
     {
         "name": "Sykes",
         "type": "minion",
         "mana": 1,
         "damage": 5,
-        "health": 1
+        "health": 1,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "turn_started",
+            "condition": "current"
+        }
     },
     {
         "name": "Katrina",
