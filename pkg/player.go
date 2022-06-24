@@ -156,7 +156,7 @@ func (p *Player) CardsOnBoardCount() int {
 
 func (p *Player) NotifyDamage(event GameEvent) bool {
 	minion := event.GetData().(*ActiveMinion)
-	go p.Send(DamageTaken(minion.Minion))
+	go p.Send(DamageTaken(minion))
 	return false
 }
 
@@ -168,7 +168,7 @@ func (p *Player) NotifyPlayerDamage(event GameEvent) bool {
 
 func (p *Player) NotifyDestroyed(event GameEvent) bool {
 	minion := event.GetData().(*ActiveMinion)
-	go p.Send(MinionDestroyedMessage(minion.Minion))
+	go p.Send(MinionDestroyedMessage(minion))
 	return false
 }
 

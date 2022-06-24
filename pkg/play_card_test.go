@@ -419,13 +419,19 @@ func TestTriggerableMinionAbility(t *testing.T) {
 
 	game.EndTurn()
 
-	<-p1.Outgoing
-	<-p2.Outgoing
+	<-p1.Outgoing // turn
+	<-p2.Outgoing // turn
 
 	game.EndTurn()
 
-	<-p1.Outgoing
-	<-p2.Outgoing
+	<-p1.Outgoing // turn
+	<-p2.Outgoing // turn
+
+	<-p1.Outgoing // state changed
+	<-p2.Outgoing // state changed
+
+	<-p1.Outgoing // damage gained
+	<-p2.Outgoing // damage gained
 
 	// expect ability to be cast
 	if minion.GetDamage() != 2 {

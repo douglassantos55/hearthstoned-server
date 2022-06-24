@@ -32,7 +32,7 @@ func StartingHandMessage(gameId uuid.UUID, duration time.Duration, hand *Hand) R
 	}
 }
 
-func DamageTaken(card *Minion) Response {
+func DamageTaken(card *ActiveMinion) Response {
 	return Response{
 		Type:    MinionDamageTaken,
 		Payload: card,
@@ -46,7 +46,7 @@ func PlayerDamagedMessage(player *Player) Response {
 	}
 }
 
-func MinionDestroyedMessage(card *Minion) Response {
+func MinionDestroyedMessage(card *ActiveMinion) Response {
 	return Response{
 		Type:    MinionDestroyed,
 		Payload: card,
@@ -317,6 +317,8 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 
 				// after attacking, minion gets exhausted
 				attacker.SetState(Exhausted{})
+
+				go g.dispatcher.Dispatch(NewStateChangedEvent(attacker))
 			}
 		}
 	}

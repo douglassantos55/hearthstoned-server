@@ -46,6 +46,9 @@ func TestCombat(t *testing.T) {
 
 		game.EndTurn()
 
+		<-p1.Outgoing // attribute changed
+		<-p2.Outgoing // attribute changed
+
 		<-p1.Outgoing // start turn
 		<-p2.Outgoing // wait turn
 
@@ -66,7 +69,7 @@ func TestCombat(t *testing.T) {
 			if response.Type != MinionDamageTaken {
 				t.Errorf("Expected %v, got %v", MinionDamageTaken, response.Type)
 			}
-			minion := response.Payload.(*Minion)
+			minion := response.Payload.(*ActiveMinion)
 			if minion.Id != defender.Id {
 				t.Errorf("Expected %v, got %v", defender.Id, minion.Id)
 			}
@@ -82,7 +85,7 @@ func TestCombat(t *testing.T) {
 			if response.Type != MinionDamageTaken {
 				t.Errorf("Expected %v, got %v", MinionDamageTaken, response.Type)
 			}
-			minion := response.Payload.(*Minion)
+			minion := response.Payload.(*ActiveMinion)
 			if minion.Id != defender.Id {
 				t.Errorf("Expected %v, got %v", defender.Id, minion.Id)
 			}
@@ -98,7 +101,7 @@ func TestCombat(t *testing.T) {
 			if response.Type != MinionDestroyed {
 				t.Errorf("Expected %v, got %v", MinionDestroyed, response.Type)
 			}
-			minion := response.Payload.(*Minion)
+			minion := response.Payload.(*ActiveMinion)
 			if minion.Id != attacker.Id {
 				t.Errorf("Expected %v, got %v", attacker.Id, minion.Id)
 			}
@@ -111,7 +114,7 @@ func TestCombat(t *testing.T) {
 			if response.Type != MinionDestroyed {
 				t.Errorf("Expected %v, got %v", MinionDestroyed, response.Type)
 			}
-			minion := response.Payload.(*Minion)
+			minion := response.Payload.(*ActiveMinion)
 			if minion.Id != attacker.Id {
 				t.Errorf("Expected %v, got %v", attacker.Id, minion.Id)
 			}
@@ -203,6 +206,9 @@ func TestCombat(t *testing.T) {
 
 		<-p1.Outgoing
 		<-p2.Outgoing
+
+		<-p1.Outgoing // attribute changed
+		<-p2.Outgoing // attribute changed
 
 		manager.Process(Event{
 			Type:   AttackPlayer,

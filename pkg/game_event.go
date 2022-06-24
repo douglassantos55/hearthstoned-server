@@ -164,7 +164,7 @@ func (m ManaGained) GetType() GameEventType {
 }
 
 type DamageIncreased struct {
-	Minion *Minion
+	Minion *ActiveMinion
 }
 
 func (d DamageIncreased) GetData() interface{} {

@@ -86,7 +86,8 @@ func TestCreateMinionWithAbility(t *testing.T) {
 		t.Errorf("Expected %v event, got %v", TurnStartedEvent, minion.trigger.Event)
 	}
 
-	minion.CastAbility()
+	active := NewMinion(minion, NewPlayer(NewTestSocket()))
+	active.CastAbility()
 
 	if minion.GetDamage() != 2 {
 		t.Errorf("Expected %v damage, got %v", 2, minion.GetDamage())
@@ -159,10 +160,11 @@ func TestMinionWithCondition(t *testing.T) {
 		t.Error("Expected trigger condition")
 	}
 
+	active := NewMinion(minion, NewPlayer(NewTestSocket()))
 	dispatcher := NewGameDispatcher()
 	dispatcher.Subscribe(minion.trigger.Event, func(event GameEvent) bool {
-		if minion.trigger.Condition(minion, event) {
-			minion.CastAbility()
+		if active.trigger.Condition(minion, event) {
+			active.CastAbility()
 		}
 		return true
 	})

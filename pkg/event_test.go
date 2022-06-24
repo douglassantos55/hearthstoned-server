@@ -24,7 +24,7 @@ func TestGainManaEvent(t *testing.T) {
 func TestAttributeChangedEvent(t *testing.T) {
 	socket := NewTestSocket()
 	player := NewPlayer(socket)
-	minion := NewCard("test", 1, 1, 1)
+	minion := NewMinion(NewCard("test", 1, 1, 1), player)
 	dispatcher := NewGameDispatcher()
 
 	dispatcher.Subscribe(DamageIncreasedEvent, player.NotifyAttributeChanges)
@@ -35,7 +35,7 @@ func TestAttributeChangedEvent(t *testing.T) {
 		if response.Type != AttributeChanged {
 			t.Errorf("Expected %v type, got %v", AttributeChanged, response.Type)
 		}
-		if response.Payload.(*Minion) != minion {
+		if response.Payload.(*ActiveMinion) != minion {
 			t.Error("wrong minion")
 		}
 	}

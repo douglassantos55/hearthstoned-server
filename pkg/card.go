@@ -57,7 +57,7 @@ func (g *GainMana) Cast() GameEvent {
 
 type GainDamage struct {
 	amount int
-	minion *Minion
+	minion *ActiveMinion
 }
 
 func (g *GainDamage) MarshalJSON() ([]byte, error) {
@@ -79,7 +79,7 @@ func (g *GainDamage) Cast() GameEvent {
 }
 
 func (g *GainDamage) SetTarget(target interface{}) {
-	g.minion = target.(*Minion)
+	g.minion = target.(*ActiveMinion)
 }
 
 // Spell card
@@ -144,11 +144,6 @@ func (c *Minion) GetMana() int {
 
 func (m *Minion) HasAbility() bool {
 	return m.Ability != nil
-}
-
-func (m *Minion) CastAbility() GameEvent {
-	m.Ability.SetTarget(m)
-	return m.Ability.Cast()
 }
 
 func (m *Minion) SetAbility(trigger *Trigger, ability Ability) {
@@ -305,4 +300,9 @@ func (m *ActiveMinion) SetState(state MinionState) {
 func (m *ActiveMinion) RemoveHealth(amount int) bool {
 	m.Health -= amount
 	return m.Health > 0
+}
+
+func (m *ActiveMinion) CastAbility() GameEvent {
+	m.Ability.SetTarget(m)
+	return m.Ability.Cast()
 }
