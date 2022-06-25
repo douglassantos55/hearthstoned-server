@@ -71,12 +71,12 @@ type CardDiscardedPayload struct {
 }
 
 type TurnPayload struct {
-	GameId      uuid.UUID     `json:"game_id"`
+	PlayerId    uuid.UUID     `json:"player_id,omitempty"`
 	Mana        int           `json:"mana"`
 	Duration    time.Duration `json:"duration"`
-	CardsInHand int           `json:"cards_in_hand"`
-	Cards       []Card        `json:"cards"`
-	OpponentId  uuid.UUID     `json:"opponent_id"`
+	CardsInHand int           `json:"cards_in_hand,omitempty"`
+	Cards       []Card        `json:"cards,omitempty"`
+	OpponentId  uuid.UUID     `json:"opponent_id,omitempty"`
 }
 
 type PlayCardPayload struct {

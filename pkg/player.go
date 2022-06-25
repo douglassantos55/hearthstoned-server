@@ -215,6 +215,7 @@ func (p *Player) NotifyTurnStarted(event GameEvent) bool {
 		go p.Send(Response{
 			Type: StartTurn,
 			Payload: TurnPayload{
+				PlayerId:    player.Id,
 				Duration:    duration,
 				Cards:       player.hand.GetCards(),
 				Mana:        player.GetMana(),
