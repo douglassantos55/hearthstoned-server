@@ -6,14 +6,12 @@ import (
 	"os"
 )
 
-var cards []Card
+var cardData []CardData
 
 func GetCards() []Card {
-	if len(cards) > 0 {
-		return cards
-	}
-
+	cards := []Card{}
 	data, err := loadCards("../cards.json")
+
 	if err != nil {
 		return cards
 	}
@@ -24,23 +22,26 @@ func GetCards() []Card {
 			cards = append(cards, card)
 		}
 	}
+
 	return cards
 }
 
 func loadCards(filename string) ([]CardData, error) {
-	var cardsData []CardData
+	if len(cardData) > 0 {
+		return cardData, nil
+	}
+
 	contents, err := os.ReadFile(filename)
-
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(contents, &cardsData)
+	err = json.Unmarshal(contents, &cardData)
 	if err != nil {
 		return nil, err
 	}
 
-	return cardsData, nil
+	return cardData, nil
 }
 
 type CardData struct {
