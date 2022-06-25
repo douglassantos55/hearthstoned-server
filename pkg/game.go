@@ -373,6 +373,11 @@ func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) bool
 			// send player damage event
 			g.dispatcher.Dispatch(NewPlayerDamagedEvent(player))
 
+			// after attacking, minion gets exhausted
+			attacker.SetState(Exhausted{})
+
+			g.dispatcher.Dispatch(NewStateChangedEvent(attacker))
+
 			// check if dead
 			if player.GetHealth() <= 0 {
 				g.GameOver(current, player)

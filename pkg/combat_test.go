@@ -204,8 +204,8 @@ func TestCombat(t *testing.T) {
 
 		game.StartTurn()
 
-		<-p1.Outgoing
-		<-p2.Outgoing
+		<-p1.Outgoing // turn
+		<-p2.Outgoing // turn
 
 		<-p1.Outgoing // attribute changed
 		<-p2.Outgoing // attribute changed
@@ -222,6 +222,9 @@ func TestCombat(t *testing.T) {
 
 		<-p1.Outgoing // damage taken
 		<-p2.Outgoing // damage taken
+
+		<-p1.Outgoing // attribute changed
+		<-p2.Outgoing // attribute changed
 
 		if player.Health != 0 {
 			t.Errorf("Expected %v health, got %v", 0, player.Health)
