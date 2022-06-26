@@ -89,3 +89,13 @@ type CombatPayload struct {
 	Attacker string
 	Defender string
 }
+
+type MinionDamagedPayload struct {
+	Attacker *ActiveMinion
+	Defender *ActiveMinion
+}
+
+type PlayerDamagedPayload struct {
+	Player   *Player
+	Attacker *ActiveMinion
+}

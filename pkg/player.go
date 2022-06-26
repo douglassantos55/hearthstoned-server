@@ -155,14 +155,20 @@ func (p *Player) CardsOnBoardCount() int {
 }
 
 func (p *Player) NotifyDamage(event GameEvent) bool {
-	minion := event.GetData().(*ActiveMinion)
-	go p.Send(DamageTaken(minion))
+	payload := event.GetData().(MinionDamagedPayload)
+	go p.Send(Response{
+		Type:    MinionDamageTaken,
+		Payload: payload,
+	})
 	return false
 }
 
 func (p *Player) NotifyPlayerDamage(event GameEvent) bool {
-	player := event.GetData().(*Player)
-	go p.Send(PlayerDamagedMessage(player))
+	payload := event.GetData().(PlayerDamagedPayload)
+	go p.Send(Response{
+		Type:    PlayerDamageTaken,
+		Payload: payload,
+	})
 	return false
 }
 

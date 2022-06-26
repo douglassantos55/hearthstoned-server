@@ -69,12 +69,15 @@ func TestCombat(t *testing.T) {
 			if response.Type != MinionDamageTaken {
 				t.Errorf("Expected %v, got %v", MinionDamageTaken, response.Type)
 			}
-			minion := response.Payload.(*ActiveMinion)
-			if minion.Id != defender.Id {
-				t.Errorf("Expected %v, got %v", defender.Id, minion.Id)
+			payload := response.Payload.(MinionDamagedPayload)
+			if payload.Defender.Id != defender.Id {
+				t.Errorf("Expected %v defender, got %v", defender.Id, payload.Defender.Id)
 			}
-			if minion.Health != 1 {
-				t.Errorf("Expecetd %v health, got %v", 1, minion.Health)
+			if payload.Defender.Health != 1 {
+				t.Errorf("Expecetd %v health, got %v", 1, payload.Defender.Health)
+			}
+			if payload.Attacker.Id != attacker.Id {
+				t.Errorf("Expected %v attacker, got %v", attacker.Id, payload.Attacker.Id)
 			}
 		}
 
@@ -85,12 +88,15 @@ func TestCombat(t *testing.T) {
 			if response.Type != MinionDamageTaken {
 				t.Errorf("Expected %v, got %v", MinionDamageTaken, response.Type)
 			}
-			minion := response.Payload.(*ActiveMinion)
-			if minion.Id != defender.Id {
-				t.Errorf("Expected %v, got %v", defender.Id, minion.Id)
+			payload := response.Payload.(MinionDamagedPayload)
+			if payload.Defender.Id != defender.Id {
+				t.Errorf("Expected %v defender, got %v", defender.Id, payload.Defender.Id)
 			}
-			if minion.Health != 1 {
-				t.Errorf("Expecetd %v health, got %v", 1, minion.Health)
+			if payload.Defender.Health != 1 {
+				t.Errorf("Expecetd %v health, got %v", 1, payload.Defender.Health)
+			}
+			if payload.Attacker.Id != attacker.Id {
+				t.Errorf("Expected %v attacker, got %v", attacker.Id, payload.Attacker.Id)
 			}
 		}
 
@@ -139,6 +145,9 @@ func TestCombat(t *testing.T) {
 
 		game.StartTurn()
 
+		<-p1.Outgoing // start turn
+		<-p2.Outgoing // wait turn
+
 		manager.Process(Event{
 			Type:   AttackPlayer,
 			Player: p1,
@@ -148,6 +157,41 @@ func TestCombat(t *testing.T) {
 				Defender: player.Id.String(),
 			},
 		})
+
+		<-p1.Outgoing // start turn
+		<-p2.Outgoing // wait turn
+
+		select {
+		case <-time.After(500 * time.Millisecond):
+			t.Error("Expected response")
+		case response := <-p1.Outgoing:
+			if response.Type != PlayerDamageTaken {
+				t.Errorf("Expected %v type, got %v", PlayerDamageTaken, response.Type)
+			}
+			payload := response.Payload.(PlayerDamagedPayload)
+			if payload.Player.Id != player.Id {
+				t.Errorf("Expected %v player, got %v", player.Id, payload.Player.Id)
+			}
+			if payload.Attacker.Id != attacker.Id {
+				t.Errorf("Expected %v attacker, got %v", attacker.Id, payload.Attacker.Id)
+			}
+		}
+
+		select {
+		case <-time.After(500 * time.Millisecond):
+			t.Error("Expected response")
+		case response := <-p2.Outgoing:
+			if response.Type != PlayerDamageTaken {
+				t.Errorf("Expected %v type, got %v", PlayerDamageTaken, response.Type)
+			}
+			payload := response.Payload.(PlayerDamagedPayload)
+			if payload.Player.Id != player.Id {
+				t.Errorf("Expected %v player, got %v", player.Id, payload.Player.Id)
+			}
+			if payload.Attacker.Id != attacker.Id {
+				t.Errorf("Expected %v attacker, got %v", attacker.Id, payload.Attacker.Id)
+			}
+		}
 
 		if player.Health != MAX_HEALTH-3 {
 			t.Errorf("Expected %v health, got %v", MAX_HEALTH-3, player.Health)

@@ -32,20 +32,6 @@ func StartingHandMessage(gameId uuid.UUID, duration time.Duration, hand *Hand) R
 	}
 }
 
-func DamageTaken(card *ActiveMinion) Response {
-	return Response{
-		Type:    MinionDamageTaken,
-		Payload: card,
-	}
-}
-
-func PlayerDamagedMessage(player *Player) Response {
-	return Response{
-		Type:    PlayerDamageTaken,
-		Payload: player,
-	}
-}
-
 func MinionDestroyedMessage(card *ActiveMinion) Response {
 	return Response{
 		Type:    MinionDestroyed,
@@ -294,7 +280,7 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 			if defender, player := g.FindMinion(defenderId); defender != nil {
 				// deal damage to defender
 				if survived := defender.RemoveHealth(attacker.Damage); survived {
-					go g.dispatcher.Dispatch(NewDamageEvent(defender))
+					go g.dispatcher.Dispatch(NewDamageEvent(defender, attacker))
 
 					// if it survives, counter-attack
 					if defender.CanCounterAttack() && !attacker.RemoveHealth(defender.Damage) {
@@ -305,7 +291,7 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 						go g.dispatcher.Dispatch(NewDestroyedEvent(attacker))
 					} else {
 						// send damage taken message to players
-						go g.dispatcher.Dispatch(NewDamageEvent(attacker))
+						go g.dispatcher.Dispatch(NewDamageEvent(attacker, defender))
 					}
 				} else {
 					// remove from its board
@@ -371,7 +357,7 @@ func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) bool
 			player.ReduceHealth(attacker.GetDamage())
 
 			// send player damage event
-			g.dispatcher.Dispatch(NewPlayerDamagedEvent(player))
+			g.dispatcher.Dispatch(NewPlayerDamagedEvent(player, attacker))
 
 			// after attacking, minion gets exhausted
 			attacker.SetState(Exhausted{})

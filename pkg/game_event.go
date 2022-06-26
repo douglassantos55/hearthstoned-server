@@ -70,17 +70,22 @@ type GameEvent interface {
 }
 
 type DamageEvent struct {
-	minion *ActiveMinion
+	defender *ActiveMinion
+	attacker *ActiveMinion
 }
 
-func NewDamageEvent(minion *ActiveMinion) DamageEvent {
+func NewDamageEvent(defender *ActiveMinion, attacker *ActiveMinion) DamageEvent {
 	return DamageEvent{
-		minion,
+		defender: defender,
+		attacker: attacker,
 	}
 }
 
 func (d DamageEvent) GetData() interface{} {
-	return d.minion
+	return MinionDamagedPayload{
+		Attacker: d.attacker,
+		Defender: d.defender,
+	}
 }
 
 func (d DamageEvent) GetType() GameEventType {
@@ -176,17 +181,22 @@ func (m DamageIncreased) GetType() GameEventType {
 }
 
 type PlayerDamaged struct {
-	player *Player
+	player   *Player
+	attacker *ActiveMinion
 }
 
-func NewPlayerDamagedEvent(player *Player) PlayerDamaged {
+func NewPlayerDamagedEvent(player *Player, attacker *ActiveMinion) PlayerDamaged {
 	return PlayerDamaged{
-		player: player,
+		player:   player,
+		attacker: attacker,
 	}
 }
 
 func (d PlayerDamaged) GetData() interface{} {
-	return d.player
+	return PlayerDamagedPayload{
+		Player:   d.player,
+		Attacker: d.attacker,
+	}
 }
 
 func (m PlayerDamaged) GetType() GameEventType {
