@@ -279,32 +279,39 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 			// check if defender exists in defending player's board
 			if defender, player := g.FindMinion(defenderId); defender != nil {
 				// deal damage to defender
-				if survived := defender.RemoveHealth(attacker.Damage); survived {
-					go g.dispatcher.Dispatch(NewDamageEvent(defender, attacker))
+				survived := defender.RemoveHealth(attacker.Damage)
 
+				// send damage taken message to players
+				g.dispatcher.Dispatch(NewDamageEvent(defender, attacker))
+
+				if survived {
 					// if it survives, counter-attack
-					if defender.CanCounterAttack() && !attacker.RemoveHealth(defender.Damage) {
-						// remove from its board
-						current.board.Remove(attacker)
+					if defender.CanCounterAttack() {
+						survived = attacker.RemoveHealth(defender.Damage)
 
-						// send minion destroyed message to players
-						go g.dispatcher.Dispatch(NewDestroyedEvent(attacker))
-					} else {
 						// send damage taken message to players
-						go g.dispatcher.Dispatch(NewDamageEvent(attacker, defender))
+						g.dispatcher.Dispatch(NewDamageEvent(attacker, defender))
+
+						if !survived {
+							// remove from its board
+							current.board.Remove(attacker)
+
+							// send minion destroyed message to players
+							g.dispatcher.Dispatch(NewDestroyedEvent(attacker))
+						}
 					}
 				} else {
 					// remove from its board
 					player.board.Remove(defender)
 
 					// send minion destroyed message to players
-					go g.dispatcher.Dispatch(NewDestroyedEvent(defender))
+					g.dispatcher.Dispatch(NewDestroyedEvent(defender))
 				}
 
 				// after attacking, minion gets exhausted
 				attacker.SetState(Exhausted{})
 
-				go g.dispatcher.Dispatch(NewStateChangedEvent(attacker))
+				g.dispatcher.Dispatch(NewStateChangedEvent(attacker))
 			}
 		}
 	}

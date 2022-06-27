@@ -102,6 +102,44 @@ func TestCombat(t *testing.T) {
 
 		select {
 		case <-time.After(100 * time.Millisecond):
+			t.Error("Expected damage taken response")
+		case response := <-p1.Outgoing:
+			if response.Type != MinionDamageTaken {
+				t.Errorf("Expected %v, got %v", MinionDamageTaken, response.Type)
+			}
+			payload := response.Payload.(MinionDamagedPayload)
+			if payload.Defender.Id != attacker.Id {
+				t.Errorf("Expected %v defender, got %v", attacker.Id, payload.Defender.Id)
+			}
+			if payload.Defender.Health != 0 {
+				t.Errorf("Expecetd %v health, got %v", 0, payload.Defender.Health)
+			}
+			if payload.Attacker.Id != defender.Id {
+				t.Errorf("Expected %v attacker, got %v", defender.Id, payload.Attacker.Id)
+			}
+		}
+
+		select {
+		case <-time.After(100 * time.Millisecond):
+			t.Error("Expected damage taken response")
+		case response := <-p2.Outgoing:
+			if response.Type != MinionDamageTaken {
+				t.Errorf("Expected %v, got %v", MinionDamageTaken, response.Type)
+			}
+			payload := response.Payload.(MinionDamagedPayload)
+			if payload.Defender.Id != attacker.Id {
+				t.Errorf("Expected %v defender, got %v", attacker.Id, payload.Defender.Id)
+			}
+			if payload.Defender.Health != 0 {
+				t.Errorf("Expecetd %v health, got %v", 0, payload.Defender.Health)
+			}
+			if payload.Attacker.Id != defender.Id {
+				t.Errorf("Expected %v attacker, got %v", defender.Id, payload.Attacker.Id)
+			}
+		}
+
+		select {
+		case <-time.After(100 * time.Millisecond):
 			t.Error("Expected minion destroyed response")
 		case response := <-p1.Outgoing:
 			if response.Type != MinionDestroyed {
