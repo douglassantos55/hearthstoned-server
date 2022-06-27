@@ -165,6 +165,13 @@ func (m *Minion) GetDamage() int {
 	return m.Damage
 }
 
+func (m *Minion) GetHealth() int {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	return m.Health
+}
+
 type Hand struct {
 	cards map[uuid.UUID]Card
 	mutex *sync.Mutex
@@ -288,16 +295,25 @@ func (m *ActiveMinion) CanCounterAttack() bool {
 }
 
 func (m *ActiveMinion) GetState() MinionState {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	return m.state
 }
 
 func (m *ActiveMinion) SetState(state MinionState) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	m.state = state
 	m.State = reflect.TypeOf(state).Name()
 }
 
 // Reduces minion health and returns wether it survives or not
 func (m *ActiveMinion) RemoveHealth(amount int) bool {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	m.Health -= amount
 	return m.Health > 0
 }

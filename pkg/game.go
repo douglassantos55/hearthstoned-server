@@ -243,7 +243,7 @@ func (g *Game) HandleAbilities(event GameEvent) bool {
 							}
 						}
 						// until it dies
-						return minion.Health <= 0
+						return minion.GetHealth() <= 0
 					})
 				} else {
 					if event := minion.CastAbility(); event != nil {
@@ -279,25 +279,30 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 			// check if defender exists in defending player's board
 			if defender, player := g.FindMinion(defenderId); defender != nil {
 				// deal damage to defender
-				survived := defender.RemoveHealth(attacker.Damage)
+				survived := defender.RemoveHealth(attacker.GetDamage())
 
 				// send damage taken message to players
-				g.dispatcher.Dispatch(NewDamageEvent(defender, attacker))
+				g.dispatcher.Dispatch(NewDamageEvent(attacker, defender))
 
 				if survived {
 					// if it survives, counter-attack
 					if defender.CanCounterAttack() {
-						survived = attacker.RemoveHealth(defender.Damage)
+						attackerSurvived := attacker.RemoveHealth(defender.GetDamage())
 
 						// send damage taken message to players
-						g.dispatcher.Dispatch(NewDamageEvent(attacker, defender))
+						g.dispatcher.Dispatch(NewDamageEvent(defender, attacker))
 
-						if !survived {
+						if !attackerSurvived {
 							// remove from its board
 							current.board.Remove(attacker)
 
 							// send minion destroyed message to players
 							g.dispatcher.Dispatch(NewDestroyedEvent(attacker))
+						} else {
+							// after attacking, minion gets exhausted
+							attacker.SetState(Exhausted{})
+
+							g.dispatcher.Dispatch(NewStateChangedEvent(attacker))
 						}
 					}
 				} else {
@@ -306,12 +311,12 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 
 					// send minion destroyed message to players
 					g.dispatcher.Dispatch(NewDestroyedEvent(defender))
+
+					// after attacking, minion gets exhausted
+					attacker.SetState(Exhausted{})
+
+					g.dispatcher.Dispatch(NewStateChangedEvent(attacker))
 				}
-
-				// after attacking, minion gets exhausted
-				attacker.SetState(Exhausted{})
-
-				g.dispatcher.Dispatch(NewStateChangedEvent(attacker))
 			}
 		}
 	}

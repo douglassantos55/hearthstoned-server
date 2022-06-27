@@ -74,7 +74,7 @@ type DamageEvent struct {
 	attacker *ActiveMinion
 }
 
-func NewDamageEvent(defender *ActiveMinion, attacker *ActiveMinion) DamageEvent {
+func NewDamageEvent(attacker *ActiveMinion, defender *ActiveMinion) DamageEvent {
 	return DamageEvent{
 		defender: defender,
 		attacker: attacker,

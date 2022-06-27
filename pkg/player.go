@@ -156,7 +156,7 @@ func (p *Player) CardsOnBoardCount() int {
 
 func (p *Player) NotifyDamage(event GameEvent) bool {
 	payload := event.GetData().(MinionDamagedPayload)
-	go p.Send(Response{
+	p.Send(Response{
 		Type:    MinionDamageTaken,
 		Payload: payload,
 	})

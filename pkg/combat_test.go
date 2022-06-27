@@ -52,7 +52,7 @@ func TestCombat(t *testing.T) {
 		<-p1.Outgoing // start turn
 		<-p2.Outgoing // wait turn
 
-		manager.Process(Event{
+		go manager.Process(Event{
 			Type:   Attack,
 			Player: p1,
 			Payload: CombatPayload{
