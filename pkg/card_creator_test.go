@@ -78,12 +78,12 @@ func TestCreateMinionWithAbility(t *testing.T) {
 
 	minion := card.(*Minion)
 
-	if minion.trigger == nil {
+	if minion.Trigger == nil {
 		t.Error("minion ability should have a trigger")
 	}
 
-	if minion.trigger.Event != TurnStartedEvent {
-		t.Errorf("Expected %v event, got %v", TurnStartedEvent, minion.trigger.Event)
+	if minion.Trigger.Event != TurnStartedEvent {
+		t.Errorf("Expected %v event, got %v", TurnStartedEvent, minion.Trigger.Event)
 	}
 
 	active := NewMinion(minion, NewPlayer(NewTestSocket()))
@@ -152,18 +152,18 @@ func TestMinionWithCondition(t *testing.T) {
 		t.Error("Should have an ability")
 	}
 
-	if minion.trigger == nil {
+	if minion.Trigger == nil {
 		t.Error("Should have a trigger")
 	}
 
-	if minion.trigger.Condition == nil {
+	if minion.Trigger.condition == nil {
 		t.Error("Expected trigger condition")
 	}
 
 	active := NewMinion(minion, NewPlayer(NewTestSocket()))
 	dispatcher := NewGameDispatcher()
-	dispatcher.Subscribe(minion.trigger.Event, func(event GameEvent) bool {
-		if active.trigger.Condition(minion, event) {
+	dispatcher.Subscribe(minion.Trigger.Event, func(event GameEvent) bool {
+		if active.Trigger.condition(minion, event) {
 			active.CastAbility()
 		}
 		return true
@@ -204,7 +204,7 @@ func TestTurnStartedCondition(t *testing.T) {
 
 	dispatcher := NewGameDispatcher()
 	dispatcher.Subscribe(TurnStartedEvent, func(event GameEvent) bool {
-		if minion.trigger.Condition(minion, event) {
+		if minion.Trigger.condition(minion, event) {
 			minion.CastAbility()
 		}
 		return true

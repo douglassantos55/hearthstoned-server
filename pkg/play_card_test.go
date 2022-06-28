@@ -389,7 +389,7 @@ func TestTriggerableMinionAbility(t *testing.T) {
 	// give it an ability
 	trigger := &Trigger{
 		Event: TurnStartedEvent,
-		Condition: func(card Card, event GameEvent) bool {
+		condition: func(card Card, event GameEvent) bool {
 			data := event.GetData().(map[string]interface{})
 			player := data["Player"].(*Player)
 			minion := card.(*ActiveMinion)

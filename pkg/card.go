@@ -119,7 +119,7 @@ type Minion struct {
 	Damage  int
 	Health  int
 	Ability Ability
-	trigger *Trigger
+	Trigger *Trigger
 }
 
 func NewCard(name string, mana, damage, health int) *Minion {
@@ -147,7 +147,7 @@ func (m *Minion) HasAbility() bool {
 }
 
 func (m *Minion) SetAbility(trigger *Trigger, ability Ability) {
-	m.trigger = trigger
+	m.Trigger = trigger
 	m.Ability = ability
 }
 

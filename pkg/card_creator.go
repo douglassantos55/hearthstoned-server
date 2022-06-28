@@ -118,7 +118,7 @@ func CreateAbility(data AbilityData) (Ability, error) {
 func CreateTrigger(event string, condition string) *Trigger {
 	return &Trigger{
 		Event:     event,
-		Condition: CreateCondition(condition),
+		condition: CreateCondition(condition),
 	}
 }
 
