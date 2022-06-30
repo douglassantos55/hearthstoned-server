@@ -235,9 +235,11 @@ func (g *Game) HandleAbilities(event GameEvent) bool {
 
 		if minion, ok := card.(*ActiveMinion); ok {
 			if minion.HasAbility() {
-				if minion.Trigger != nil {
-					go g.dispatcher.Subscribe(minion.Trigger.Event, func(event GameEvent) bool {
-						if minion.Trigger.condition == nil || minion.Trigger.condition(minion, event) {
+				ability := minion.Ability
+
+				if ability.Trigger != nil {
+					go g.dispatcher.Subscribe(ability.Trigger.Event, func(event GameEvent) bool {
+						if ability.Trigger.condition == nil || ability.Trigger.condition(minion, event) {
 							if event := minion.CastAbility(); event != nil {
 								go g.dispatcher.Dispatch(event)
 							}

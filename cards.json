@@ -8,8 +8,7 @@
         "ability": {
             "type": "gain_damage",
             "params": { "amount": 1 },
-            "trigger": "turn_started",
-            "condition": "current"
+            "trigger": "opponent_turn_started"
         }
     },
     {
@@ -21,8 +20,7 @@
         "ability": {
             "type": "gain_damage",
             "params": { "amount": 1 },
-            "trigger": "turn_started",
-            "condition": "current"
+            "trigger": "turn_started"
         }
     },
     {
@@ -34,8 +32,7 @@
         "ability": {
             "type": "gain_damage",
             "params": { "amount": 1 },
-            "trigger": "turn_started",
-            "condition": "current"
+            "trigger": "opponent_turn_started"
         }
     },
     {
@@ -47,8 +44,7 @@
         "ability": {
             "type": "gain_damage",
             "params": { "amount": 1 },
-            "trigger": "turn_started",
-            "condition": "current"
+            "trigger": "turn_started"
         }
     },
     {
@@ -60,8 +56,7 @@
         "ability": {
             "type": "gain_damage",
             "params": { "amount": 1 },
-            "trigger": "turn_started",
-            "condition": "current"
+            "trigger": "opponent_turn_started"
         }
     },
     {
@@ -73,8 +68,7 @@
         "ability": {
             "type": "gain_damage",
             "params": { "amount": 1 },
-            "trigger": "turn_started",
-            "condition": "current"
+            "trigger": "turn_started"
         }
     },
     {
@@ -82,7 +76,12 @@
         "type": "minion",
         "mana": 4,
         "damage": 5,
-        "health": 8
+        "health": 8,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "opponent_minion_destroyed"
+        }
     },
     {
         "name": "Juliana",
@@ -96,7 +95,12 @@
         "type": "minion",
         "mana": 2,
         "damage": 4,
-        "health": 1
+        "health": 1,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 2 },
+            "trigger": "allied_minion_damaged"
+        }
     },
     {
         "name": "Savannah",
@@ -110,7 +114,12 @@
         "type": "minion",
         "mana": 8,
         "damage": 1,
-        "health": 10
+        "health": 10,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "opponent_minion_damaged"
+        }
     },
     {
         "name": "Aisha",
@@ -131,7 +140,12 @@
         "type": "minion",
         "mana": 2,
         "damage": 4,
-        "health": 10
+        "health": 10,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 2 },
+            "trigger": "opponent_minion_destroyed"
+        }
     },
     {
         "name": "Lana",
@@ -782,7 +796,12 @@
         "type": "minion",
         "mana": 10,
         "damage": 1,
-        "health": 7
+        "health": 7,
+        "ability": {
+            "type": "gain_damage",
+            "params": { "amount": 1 },
+            "trigger": "minion_damaged"
+        }
     },
     {
         "name": "Gomez",
@@ -884,8 +903,7 @@
         "ability": {
             "type": "gain_damage",
             "params": { "amount": 1 },
-            "trigger": "turn_started",
-            "condition": "current"
+            "trigger": "turn_started"
         }
     },
     {
@@ -897,8 +915,7 @@
         "ability": {
             "type": "draw_card",
             "params": { "amount": 1 },
-            "trigger": "minion_destroyed",
-            "condition": "allied"
+            "trigger": "allied_minion_destroyed"
         }
     }
 ]

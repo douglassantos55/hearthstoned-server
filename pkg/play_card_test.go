@@ -211,8 +211,8 @@ func TestMagicCard(t *testing.T) {
 	<-p1.Outgoing
 	<-p2.Outgoing
 
-	ability := GainManaAbility(2)
-	card := NewSpell(1, ability)
+	effect := GainManaEffect(2)
+	card := NewSpell("", 1, effect)
 
 	player := game.players[p1]
 	player.hand.Add(card)
@@ -237,10 +237,10 @@ func TestTriggeredSpell(t *testing.T) {
 	<-p1.Outgoing
 	<-p2.Outgoing
 
-	ability := GainManaAbility(1)
+	ability := GainManaEffect(1)
 	spell := Trigerable(&Trigger{
 		Event: TurnStartedEvent,
-	}, NewSpell(1, ability))
+	}, NewSpell("", 1, ability))
 
 	// play a magic card with triggered spell
 	player := game.players[p1]
@@ -277,10 +277,10 @@ func TestTriggeredSpellOnce(t *testing.T) {
 	<-p1.Outgoing
 	<-p2.Outgoing
 
-	ability := GainManaAbility(1)
+	ability := GainManaEffect(1)
 	spell := Trigerable(&Trigger{
 		Event: TurnStartedEvent,
-	}, NewSpell(1, ability))
+	}, NewSpell("", 1, ability))
 
 	// play a magic card with triggered spell
 	player := game.players[p1]
@@ -332,7 +332,7 @@ func TestMagicFullBoard(t *testing.T) {
 	}
 
 	// play magic card
-	spell := NewSpell(1, GainManaAbility(1))
+	spell := NewSpell("", 1, GainManaEffect(1))
 	player.hand.Add(spell)
 
 	// expect it to cast normally
@@ -355,7 +355,9 @@ func TestMinionAbility(t *testing.T) {
 	minion := NewCard("", 1, 1, 1)
 
 	// give it an ability
-	minion.SetAbility(nil, GainDamageAbility(1))
+	minion.SetAbility(&Ability{
+		Effect: GainDamageEffect(1),
+	})
 
 	// play the minion
 	player := game.players[p1]
@@ -397,7 +399,10 @@ func TestTriggerableMinionAbility(t *testing.T) {
 		},
 	}
 
-	minion.SetAbility(trigger, GainDamageAbility(1))
+	minion.SetAbility(&Ability{
+		Trigger: trigger,
+		Effect:  GainDamageEffect(1),
+	})
 
 	game.StartTurn()
 

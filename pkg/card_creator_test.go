@@ -78,12 +78,12 @@ func TestCreateMinionWithAbility(t *testing.T) {
 
 	minion := card.(*Minion)
 
-	if minion.Trigger == nil {
+	if minion.Ability.Trigger == nil {
 		t.Error("minion ability should have a trigger")
 	}
 
-	if minion.Trigger.Event != TurnStartedEvent {
-		t.Errorf("Expected %v event, got %v", TurnStartedEvent, minion.Trigger.Event)
+	if minion.Ability.Trigger.Event != TurnStartedEvent {
+		t.Errorf("Expected %v event, got %v", TurnStartedEvent, minion.Ability.Trigger.Event)
 	}
 
 	active := NewMinion(minion, NewPlayer(NewTestSocket()))
@@ -132,10 +132,9 @@ func TestMinionWithCondition(t *testing.T) {
 		Damage: 1,
 		Health: 1,
 		Ability: AbilityData{
-			Type:      "gain_damage",
-			Params:    map[string]interface{}{"amount": 1.0},
-			Trigger:   "minion_destroyed",
-			Condition: "allied",
+			Type:    "gain_damage",
+			Params:  map[string]interface{}{"amount": 1.0},
+			Trigger: "allied_minion_destroyed",
 		},
 	})
 
@@ -152,27 +151,27 @@ func TestMinionWithCondition(t *testing.T) {
 		t.Error("Should have an ability")
 	}
 
-	if minion.Trigger == nil {
+	if minion.Ability.Trigger == nil {
 		t.Error("Should have a trigger")
 	}
 
-	if minion.Trigger.condition == nil {
+	if minion.Ability.Trigger.condition == nil {
 		t.Error("Expected trigger condition")
 	}
 
-	active := NewMinion(minion, NewPlayer(NewTestSocket()))
+	player := NewPlayer(NewTestSocket())
+
+	active := NewMinion(minion, player)
+	deadMinion := NewMinion(NewCard("", 1, 1, 2), player)
+
 	dispatcher := NewGameDispatcher()
-	dispatcher.Subscribe(minion.Trigger.Event, func(event GameEvent) bool {
-		if active.Trigger.condition(minion, event) {
+	dispatcher.Subscribe(active.Ability.Trigger.Event, func(event GameEvent) bool {
+		if active.Ability.Trigger.condition(active, event) {
 			active.CastAbility()
 		}
 		return true
 	})
 
-	player := NewPlayer(NewTestSocket())
-	deadMinion := NewMinion(NewCard("", 1, 1, 2), player)
-
-	player.PlayCard(minion)
 	dispatcher.Dispatch(NewDestroyedEvent(deadMinion))
 
 	if minion.GetDamage() != 2 {
@@ -188,10 +187,9 @@ func TestTurnStartedCondition(t *testing.T) {
 		Damage: 1,
 		Health: 1,
 		Ability: AbilityData{
-			Type:      "gain_damage",
-			Params:    map[string]interface{}{"amount": 1.0},
-			Trigger:   "turn_started",
-			Condition: "current",
+			Type:    "gain_damage",
+			Params:  map[string]interface{}{"amount": 1.0},
+			Trigger: "turn_started",
 		},
 	})
 
@@ -204,7 +202,7 @@ func TestTurnStartedCondition(t *testing.T) {
 
 	dispatcher := NewGameDispatcher()
 	dispatcher.Subscribe(TurnStartedEvent, func(event GameEvent) bool {
-		if minion.Trigger.condition(minion, event) {
+		if minion.Ability.Trigger.condition(minion, event) {
 			minion.CastAbility()
 		}
 		return true
@@ -225,10 +223,9 @@ func TestJSONWithAbility(t *testing.T) {
 		Damage: 1,
 		Health: 1,
 		Ability: AbilityData{
-			Type:      "gain_damage",
-			Params:    map[string]interface{}{"amount": 1.0},
-			Trigger:   "turn_started",
-			Condition: "current",
+			Type:    "gain_damage",
+			Params:  map[string]interface{}{"amount": 1.0},
+			Trigger: "turn_started",
 		},
 	})
 
@@ -236,4 +233,617 @@ func TestJSONWithAbility(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestTriggers(t *testing.T) {
+	t.Run("spell played", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "card_played",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		spell := NewSpell("Buff mimana", 1, GainManaEffect(2))
+		dispatcher.Dispatch(NewCardPlayedEvent(spell))
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("card played", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "card_played",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		played := NewMinion(NewCard("foo", 1, 1, 1), player)
+		dispatcher.Dispatch(NewCardPlayedEvent(played))
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("opponent card played", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "opponent_card_played",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		otherPlayer := NewPlayer(NewTestSocket())
+		played := NewMinion(NewCard("foo", 1, 1, 1), otherPlayer)
+
+		dispatcher.Dispatch(NewCardPlayedEvent(played))
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("opponent turn started", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "opponent_turn_started",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		otherPlayer := NewPlayer(NewTestSocket())
+		dispatcher.Dispatch(NewTurnStartedEvent(otherPlayer, time.Second))
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("mana gained", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "mana_gained",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(ManaGained{player})
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("opponent mana gained", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "opponent_mana_gained",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		otherPlayer := NewPlayer(NewTestSocket())
+		dispatcher.Dispatch(ManaGained{otherPlayer})
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("damage increased", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "damage_increased",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(DamageIncreased{minion})
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("allied damage increased", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "allied_damage_increased",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+		allied := NewMinion(NewCard("allied", 1, 1, 1), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(DamageIncreased{allied})
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("opponent damage increased", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "opponent_damage_increased",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		opponent := NewPlayer(NewTestSocket())
+		enemy := NewMinion(NewCard("allied", 1, 1, 1), opponent)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(DamageIncreased{enemy})
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("minion state changed", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "minion_state_changed",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(NewStateChangedEvent(minion))
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("allied minion state changed", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "allied_minion_state_changed",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+		allied := NewMinion(NewCard("allied", 1, 1, 1), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(NewStateChangedEvent(allied))
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("opponent minion state changed", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "opponent_minion_state_changed",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		opponent := NewPlayer(NewTestSocket())
+		enemy := NewMinion(NewCard("enemy", 1, 1, 1), opponent)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(NewStateChangedEvent(enemy))
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("minion destroyed", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "minion_destroyed",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(NewDestroyedEvent(minion))
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("allied minion destroyed", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "allied_minion_destroyed",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+		allied := NewMinion(NewCard("allied", 1, 1, 1), player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return false
+		})
+
+		dispatcher.Dispatch(NewDestroyedEvent(minion))
+		if minion.GetDamage() != 2 {
+			t.Errorf("Expected %v damage, got %v", 2, minion.GetDamage())
+		}
+
+		dispatcher.Dispatch(NewDestroyedEvent(allied))
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("opponent minion destroyed", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "opponent_minion_destroyed",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		opponent := NewPlayer(NewTestSocket())
+		enemy := NewMinion(NewCard("enemy", 1, 1, 1), opponent)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(NewDestroyedEvent(enemy))
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("minion damaged", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "minion_damaged",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		opponent := NewPlayer(NewTestSocket())
+		attacker := NewMinion(NewCard("attacker", 1, 1, 1), opponent)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(NewDamageEvent(attacker, minion))
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("allied minion damaged", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "allied_minion_damaged",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+		allied := NewMinion(NewCard("allied", 1, 1, 1), player)
+
+		opponent := NewPlayer(NewTestSocket())
+		attacker := NewMinion(NewCard("attacker", 1, 1, 1), opponent)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return false
+		})
+
+		dispatcher.Dispatch(NewDamageEvent(attacker, minion))
+		if minion.GetDamage() != 2 {
+			t.Errorf("Expected %v damage, got %v", 2, minion.GetDamage())
+		}
+
+		dispatcher.Dispatch(NewDamageEvent(attacker, allied))
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+
+	t.Run("opponent minion damaged", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "opponent_minion_damaged",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion), player)
+
+		opponent := NewPlayer(NewTestSocket())
+		attacker := NewMinion(NewCard("attacker", 1, 1, 1), opponent)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
+			if minion.Ability.Trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(NewDamageEvent(minion, attacker))
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
 }

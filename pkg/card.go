@@ -15,7 +15,21 @@ type Card interface {
 	GetMana() int
 }
 
-type Ability interface {
+type Ability struct {
+	Effect      Effect
+	Trigger     *Trigger
+	Description string
+}
+
+func (a *Ability) SetTarget(target interface{}) {
+	a.Effect.SetTarget(target)
+}
+
+func (a *Ability) Cast() GameEvent {
+	return a.Effect.Cast()
+}
+
+type Effect interface {
 	Cast() GameEvent
 	SetTarget(target interface{})
 }
@@ -37,7 +51,7 @@ type GainMana struct {
 	player *Player
 }
 
-func GainManaAbility(amount int) *GainMana {
+func GainManaEffect(amount int) *GainMana {
 	return &GainMana{
 		amount: amount,
 	}
@@ -67,7 +81,7 @@ func (g *GainDamage) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func GainDamageAbility(amount int) *GainDamage {
+func GainDamageEffect(amount int) *GainDamage {
 	return &GainDamage{
 		amount: amount,
 	}
@@ -84,16 +98,18 @@ func (g *GainDamage) SetTarget(target interface{}) {
 
 // Spell card
 type Spell struct {
-	Id      uuid.UUID
-	Mana    int
-	Ability Ability
+	Id     uuid.UUID
+	Name   string
+	Mana   int
+	Effect Effect
 }
 
-func NewSpell(mana int, ability Ability) *Spell {
+func NewSpell(name string, mana int, effect Effect) *Spell {
 	return &Spell{
-		Id:      uuid.New(),
-		Mana:    mana,
-		Ability: ability,
+		Id:     uuid.New(),
+		Name:   name,
+		Mana:   mana,
+		Effect: effect,
 	}
 }
 
@@ -106,8 +122,8 @@ func (s *Spell) GetMana() int {
 }
 
 func (s *Spell) Execute(caster *Player) GameEvent {
-	s.Ability.SetTarget(caster)
-	return s.Ability.Cast()
+	s.Effect.SetTarget(caster)
+	return s.Effect.Cast()
 }
 
 type Minion struct {
@@ -118,8 +134,7 @@ type Minion struct {
 	Mana    int
 	Damage  int
 	Health  int
-	Ability Ability
-	Trigger *Trigger
+	Ability *Ability
 }
 
 func NewCard(name string, mana, damage, health int) *Minion {
@@ -146,8 +161,7 @@ func (m *Minion) HasAbility() bool {
 	return m.Ability != nil
 }
 
-func (m *Minion) SetAbility(trigger *Trigger, ability Ability) {
-	m.Trigger = trigger
+func (m *Minion) SetAbility(ability *Ability) {
 	m.Ability = ability
 }
 
