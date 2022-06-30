@@ -149,8 +149,6 @@ func (p *Player) PlayCard(card Card) (ActiveCard, error) {
 		played = card.(*Spell).Activate()
 	}
 
-	played.SetPlayer(p)
-
 	return played, nil
 }
 

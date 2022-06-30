@@ -105,6 +105,9 @@ func CreateAbility(data AbilityData) (*Ability, error) {
 	case "gain_mana":
 		amount := data.Params["amount"].(float64)
 		effect = GainManaEffect(int(amount))
+	case "draw_card":
+		amount := data.Params["amount"].(float64)
+		effect = &DrawCard{amount: int(amount)}
 	default:
 		return nil, fmt.Errorf("Invalid ability type: %v", data.Type)
 	}
@@ -255,6 +258,20 @@ func CreateTrigger(identifier string) *Trigger {
 			minion := card.(*ActiveMinion)
 			payload := event.GetData().(MinionDamagedPayload)
 			return minion.player != payload.Defender.player
+		}
+	case "cards_drawn":
+		event = CardsDrawnEvent
+		description = "When you draw cards"
+		condition = func(card ActiveCard, event GameEvent) bool {
+			payload := event.GetData().(CardsDrawn)
+			return payload.Player == card.GetPlayer()
+		}
+	case "opponent_cards_drawn":
+		event = CardsDrawnEvent
+		description = "When your opponent draws cards"
+		condition = func(card ActiveCard, event GameEvent) bool {
+			payload := event.GetData().(CardsDrawn)
+			return payload.Player != card.GetPlayer()
 		}
 	default:
 		return nil

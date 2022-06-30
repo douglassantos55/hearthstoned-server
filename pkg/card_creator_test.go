@@ -892,4 +892,60 @@ func TestTriggers(t *testing.T) {
 			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
 		}
 	})
+
+	t.Run("cards drawn", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 2,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_damage",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "cards_drawn",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(CardsDrawn{player, []Card{}})
+
+		if minion.GetDamage() != 4 {
+			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
+		}
+	})
+}
+
+func TestSpells(t *testing.T) {
+	t.Run("draw cards", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type: "spell",
+			Name: "Crazy Shirtless Dude",
+			Mana: 1,
+			Ability: AbilityData{
+				Type:   "draw_card",
+				Params: map[string]interface{}{"amount": 4.0},
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		spell := card.(*Spell).Activate()
+		spell.SetPlayer(player)
+		spell.CastAbility()
+
+		if player.hand.Length() != 4 {
+			t.Errorf("Expected %v cards in hand, got %v", 4, player.hand.Length())
+		}
+	})
 }
