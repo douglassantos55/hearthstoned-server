@@ -24,7 +24,8 @@ func TestGainManaEvent(t *testing.T) {
 func TestAttributeChangedEvent(t *testing.T) {
 	socket := NewTestSocket()
 	player := NewPlayer(socket)
-	minion := NewMinion(NewCard("test", 1, 1, 1), player)
+	minion := NewMinion(NewCard("test", 1, 1, 1))
+	minion.SetPlayer(player)
 	dispatcher := NewGameDispatcher()
 
 	dispatcher.Subscribe(DamageIncreasedEvent, player.NotifyAttributeChanges)

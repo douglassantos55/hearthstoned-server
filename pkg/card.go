@@ -5,45 +5,60 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
 )
 
+type HasAbility interface {
+	HasAbility() bool
+	GetAbility() *Ability
+}
+
 type Card interface {
+	HasAbility
 	GetId() uuid.UUID
 	GetMana() int
 }
 
+type ActiveCard interface {
+	Card
+	CastAbility() GameEvent
+	GetPlayer() *Player
+	SetPlayer(player *Player)
+}
+
 type Ability struct {
-	Effect      Effect
-	Trigger     *Trigger
-	Description string
+	effect  Effect
+	trigger *Trigger
+}
+
+func (a *Ability) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]string{
+		"Description": strings.Join([]string{
+			a.trigger.Description,
+			a.effect.GetDescription(),
+		}, ", "),
+	})
 }
 
 func (a *Ability) SetTarget(target interface{}) {
-	a.Effect.SetTarget(target)
+	a.effect.SetTarget(target)
 }
 
 func (a *Ability) Cast() GameEvent {
-	return a.Effect.Cast()
+	return a.effect.Cast()
+}
+
+func (a *Ability) SetTrigger(trigger *Trigger) {
+	a.trigger = trigger
 }
 
 type Effect interface {
 	Cast() GameEvent
+	GetDescription() string
 	SetTarget(target interface{})
-}
-
-type TriggerableSpell struct {
-	*Spell
-	Trigger *Trigger
-}
-
-func Trigerable(trigger *Trigger, spell *Spell) *TriggerableSpell {
-	return &TriggerableSpell{
-		Spell:   spell,
-		Trigger: trigger,
-	}
 }
 
 type GainMana struct {
@@ -55,6 +70,10 @@ func GainManaEffect(amount int) *GainMana {
 	return &GainMana{
 		amount: amount,
 	}
+}
+
+func (g *GainMana) GetDescription() string {
+	return fmt.Sprintf("gain %v mana", g.amount)
 }
 
 func (g *GainMana) SetTarget(target interface{}) {
@@ -74,11 +93,8 @@ type GainDamage struct {
 	minion *ActiveMinion
 }
 
-func (g *GainDamage) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]string{
-		"Name":        "Gain damage",
-		"Description": fmt.Sprintf("Increase %v damage", g.amount),
-	})
+func (g *GainDamage) GetDescription() string {
+	return fmt.Sprintf("gain %v damage", g.amount)
 }
 
 func GainDamageEffect(amount int) *GainDamage {
@@ -98,18 +114,18 @@ func (g *GainDamage) SetTarget(target interface{}) {
 
 // Spell card
 type Spell struct {
-	Id     uuid.UUID
-	Name   string
-	Mana   int
-	Effect Effect
+	Id      uuid.UUID
+	Name    string
+	Mana    int
+	Ability *Ability
 }
 
-func NewSpell(name string, mana int, effect Effect) *Spell {
+func NewSpell(name string, mana int, ability *Ability) *Spell {
 	return &Spell{
-		Id:     uuid.New(),
-		Name:   name,
-		Mana:   mana,
-		Effect: effect,
+		Id:      uuid.New(),
+		Name:    name,
+		Mana:    mana,
+		Ability: ability,
 	}
 }
 
@@ -122,8 +138,39 @@ func (s *Spell) GetMana() int {
 }
 
 func (s *Spell) Execute(caster *Player) GameEvent {
-	s.Effect.SetTarget(caster)
-	return s.Effect.Cast()
+	s.Ability.SetTarget(caster)
+	return s.Ability.Cast()
+}
+
+func (s *Spell) HasAbility() bool {
+	return s.Ability != nil
+}
+
+func (s *Spell) GetAbility() *Ability {
+	return s.Ability
+}
+
+func (s *Spell) Activate() *ActiveSpell {
+	return &ActiveSpell{
+		Spell: s,
+	}
+}
+
+type ActiveSpell struct {
+	*Spell
+	player *Player
+}
+
+func (s *ActiveSpell) GetPlayer() *Player {
+	return s.player
+}
+
+func (s *ActiveSpell) SetPlayer(player *Player) {
+	s.player = player
+}
+
+func (s *ActiveSpell) CastAbility() GameEvent {
+	return s.Execute(s.GetPlayer())
 }
 
 type Minion struct {
@@ -155,6 +202,10 @@ func (c *Minion) GetId() uuid.UUID {
 
 func (c *Minion) GetMana() int {
 	return c.Mana
+}
+
+func (m *Minion) GetAbility() *Ability {
+	return m.Ability
 }
 
 func (m *Minion) HasAbility() bool {
@@ -290,14 +341,22 @@ type ActiveMinion struct {
 	State  string
 }
 
-func NewMinion(card *Minion, player *Player) *ActiveMinion {
+func NewMinion(card *Minion) *ActiveMinion {
 	state := Exhausted{}
+
 	return &ActiveMinion{
 		Minion: card,
-		player: player,
 		state:  state,
 		State:  reflect.TypeOf(state).Name(),
 	}
+}
+
+func (m *ActiveMinion) GetPlayer() *Player {
+	return m.player
+}
+
+func (m *ActiveMinion) SetPlayer(player *Player) {
+	m.player = player
 }
 
 func (m *ActiveMinion) CanAttack() bool {

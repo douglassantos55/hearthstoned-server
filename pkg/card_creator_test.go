@@ -41,7 +41,8 @@ func TestCreateSpell(t *testing.T) {
 		},
 	})
 
-	if _, ok := card.(*TriggerableSpell); ok {
+	ability := card.GetAbility()
+	if ability.trigger != nil {
 		t.Error("Should not be a triggerable spell")
 	}
 
@@ -78,15 +79,15 @@ func TestCreateMinionWithAbility(t *testing.T) {
 
 	minion := card.(*Minion)
 
-	if minion.Ability.Trigger == nil {
+	if minion.Ability.trigger == nil {
 		t.Error("minion ability should have a trigger")
 	}
 
-	if minion.Ability.Trigger.Event != TurnStartedEvent {
-		t.Errorf("Expected %v event, got %v", TurnStartedEvent, minion.Ability.Trigger.Event)
+	if minion.Ability.trigger.event != TurnStartedEvent {
+		t.Errorf("Expected %v event, got %v", TurnStartedEvent, minion.Ability.trigger.event)
 	}
 
-	active := NewMinion(minion, NewPlayer(NewTestSocket()))
+	active := NewMinion(minion)
 	active.CastAbility()
 
 	if minion.GetDamage() != 2 {
@@ -110,16 +111,16 @@ func TestSpellWithTrigger(t *testing.T) {
 		t.Error(err)
 	}
 
-	if _, ok := card.(*Spell); ok {
+	ability := card.GetAbility()
+	if ability.trigger == nil {
 		t.Error("Should not be a normal spell")
 	}
 
-	spell, ok := card.(*TriggerableSpell)
-	if !ok {
+	if ability.trigger == nil {
 		t.Error("Should be a triggerable spell")
 	}
 
-	if spell.Trigger == nil {
+	if ability.trigger == nil {
 		t.Error("Should have a trigger")
 	}
 }
@@ -151,22 +152,25 @@ func TestMinionWithCondition(t *testing.T) {
 		t.Error("Should have an ability")
 	}
 
-	if minion.Ability.Trigger == nil {
+	if minion.Ability.trigger == nil {
 		t.Error("Should have a trigger")
 	}
 
-	if minion.Ability.Trigger.condition == nil {
+	if minion.Ability.trigger.condition == nil {
 		t.Error("Expected trigger condition")
 	}
 
 	player := NewPlayer(NewTestSocket())
 
-	active := NewMinion(minion, player)
-	deadMinion := NewMinion(NewCard("", 1, 1, 2), player)
+	active := NewMinion(minion)
+	active.SetPlayer(player)
+
+	deadMinion := NewMinion(NewCard("", 1, 1, 2))
+	deadMinion.SetPlayer(player)
 
 	dispatcher := NewGameDispatcher()
-	dispatcher.Subscribe(active.Ability.Trigger.Event, func(event GameEvent) bool {
-		if active.Ability.Trigger.condition(active, event) {
+	dispatcher.Subscribe(active.Ability.trigger.event, func(event GameEvent) bool {
+		if active.Ability.trigger.condition(active, event) {
 			active.CastAbility()
 		}
 		return true
@@ -198,11 +202,12 @@ func TestTurnStartedCondition(t *testing.T) {
 	}
 
 	player := NewPlayer(NewTestSocket())
-	minion := NewMinion(card.(*Minion), player)
+	minion := NewMinion(card.(*Minion))
+	minion.SetPlayer(player)
 
 	dispatcher := NewGameDispatcher()
 	dispatcher.Subscribe(TurnStartedEvent, func(event GameEvent) bool {
-		if minion.Ability.Trigger.condition(minion, event) {
+		if minion.Ability.trigger.condition(minion, event) {
 			minion.CastAbility()
 		}
 		return true
@@ -251,18 +256,22 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
 		})
 
-		spell := NewSpell("Buff mimana", 1, GainManaEffect(2))
-		dispatcher.Dispatch(NewCardPlayedEvent(spell))
+		ability := &Ability{effect: GainDamageEffect(2)}
+		spell := NewSpell("Buff mimana", 1, ability)
+		activeSpell := spell.Activate()
+		activeSpell.SetPlayer(player)
+		dispatcher.Dispatch(NewCardPlayedEvent(activeSpell))
 
 		if minion.GetDamage() != 4 {
 			t.Errorf("Expected %v damage, got %v", 4, minion.GetDamage())
@@ -284,17 +293,19 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
 		})
 
-		played := NewMinion(NewCard("foo", 1, 1, 1), player)
+		played := NewMinion(NewCard("foo", 1, 1, 1))
+		played.SetPlayer(player)
 		dispatcher.Dispatch(NewCardPlayedEvent(played))
 
 		if minion.GetDamage() != 4 {
@@ -317,18 +328,20 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
 		})
 
 		otherPlayer := NewPlayer(NewTestSocket())
-		played := NewMinion(NewCard("foo", 1, 1, 1), otherPlayer)
+		played := NewMinion(NewCard("foo", 1, 1, 1))
+		played.SetPlayer(otherPlayer)
 
 		dispatcher.Dispatch(NewCardPlayedEvent(played))
 
@@ -352,11 +365,12 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -385,11 +399,12 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -417,11 +432,12 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -450,11 +466,12 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -482,12 +499,16 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
-		allied := NewMinion(NewCard("allied", 1, 1, 1), player)
+
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
+
+		allied := NewMinion(NewCard("allied", 1, 1, 1))
+		allied.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -515,14 +536,16 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		opponent := NewPlayer(NewTestSocket())
-		enemy := NewMinion(NewCard("allied", 1, 1, 1), opponent)
+		enemy := NewMinion(NewCard("allied", 1, 1, 1))
+		enemy.SetPlayer(opponent)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -550,11 +573,12 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -582,12 +606,16 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
-		allied := NewMinion(NewCard("allied", 1, 1, 1), player)
+
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
+
+		allied := NewMinion(NewCard("allied", 1, 1, 1))
+		allied.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -614,14 +642,16 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		opponent := NewPlayer(NewTestSocket())
-		enemy := NewMinion(NewCard("enemy", 1, 1, 1), opponent)
+		enemy := NewMinion(NewCard("enemy", 1, 1, 1))
+		enemy.SetPlayer(opponent)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -648,11 +678,12 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -680,12 +711,16 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
-		allied := NewMinion(NewCard("allied", 1, 1, 1), player)
+
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
+
+		allied := NewMinion(NewCard("allied", 1, 1, 1))
+		allied.SetPlayer(player)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return false
@@ -717,14 +752,16 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		opponent := NewPlayer(NewTestSocket())
-		enemy := NewMinion(NewCard("enemy", 1, 1, 1), opponent)
+		enemy := NewMinion(NewCard("enemy", 1, 1, 1))
+		enemy.SetPlayer(opponent)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -752,14 +789,16 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		opponent := NewPlayer(NewTestSocket())
-		attacker := NewMinion(NewCard("attacker", 1, 1, 1), opponent)
+		attacker := NewMinion(NewCard("attacker", 1, 1, 1))
+		attacker.SetPlayer(opponent)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true
@@ -787,15 +826,20 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
-		allied := NewMinion(NewCard("allied", 1, 1, 1), player)
+
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
+
+		allied := NewMinion(NewCard("allied", 1, 1, 1))
+		allied.SetPlayer(player)
 
 		opponent := NewPlayer(NewTestSocket())
-		attacker := NewMinion(NewCard("attacker", 1, 1, 1), opponent)
+		attacker := NewMinion(NewCard("attacker", 1, 1, 1))
+		attacker.SetPlayer(opponent)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return false
@@ -827,14 +871,16 @@ func TestTriggers(t *testing.T) {
 		})
 
 		player := NewPlayer(NewTestSocket())
-		minion := NewMinion(card.(*Minion), player)
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
 
 		opponent := NewPlayer(NewTestSocket())
-		attacker := NewMinion(NewCard("attacker", 1, 1, 1), opponent)
+		attacker := NewMinion(NewCard("attacker", 1, 1, 1))
+		attacker.SetPlayer(opponent)
 
 		dispatcher := NewGameDispatcher()
-		dispatcher.Subscribe(minion.Ability.Trigger.Event, func(event GameEvent) bool {
-			if minion.Ability.Trigger.condition(minion, event) {
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
 				minion.CastAbility()
 			}
 			return true

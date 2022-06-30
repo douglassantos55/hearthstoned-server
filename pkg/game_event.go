@@ -111,10 +111,10 @@ func (d DestroyedEvent) GetType() GameEventType {
 }
 
 type CardPlacedEvent struct {
-	card Card
+	card ActiveCard
 }
 
-func NewCardPlayedEvent(card Card) CardPlacedEvent {
+func NewCardPlayedEvent(card ActiveCard) CardPlacedEvent {
 	return CardPlacedEvent{
 		card,
 	}
@@ -153,8 +153,8 @@ func (t TurnStarted) GetType() GameEventType {
 
 type Trigger struct {
 	Description string
-	Event       GameEventType
-	condition   func(card Card, event GameEvent) bool // Determines whether this trigger should be activated
+	event       GameEventType
+	condition   func(card ActiveCard, event GameEvent) bool // Determines whether this trigger should be activated
 }
 
 type ManaGained struct {

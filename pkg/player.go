@@ -133,21 +133,25 @@ func (p *Player) GetTotalMana() int {
 	return p.MaxMana
 }
 
-func (p *Player) PlayCard(card Card) (Card, error) {
+func (p *Player) PlayCard(card Card) (ActiveCard, error) {
+	var played ActiveCard
+
 	// reduce player's current mana
 	p.ReduceMana(card.GetMana())
 
 	// add card to player's board
 	if minion, ok := card.(*Minion); ok {
-		activeMinion := NewMinion(minion, p)
-		err := p.board.Place(activeMinion)
-		if err != nil {
+		played = NewMinion(minion)
+		if err := p.board.Place(played.(*ActiveMinion)); err != nil {
 			return nil, err
 		}
-		return activeMinion, nil
+	} else {
+		played = card.(*Spell).Activate()
 	}
 
-	return card, nil
+	played.SetPlayer(p)
+
+	return played, nil
 }
 
 func (p *Player) CardsOnBoardCount() int {

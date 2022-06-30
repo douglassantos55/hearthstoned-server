@@ -210,7 +210,7 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 	}
 
 	// play card
-	minion, err := current.PlayCard(card)
+	played, err := current.PlayCard(card)
 	if err != nil {
 		go current.Send(Response{
 			Type:    Error,
@@ -222,48 +222,37 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 	// remove card from hand now
 	current.Discard(cardId)
 
+	// link card and player
+	played.SetPlayer(current)
+
 	// dispatch card played event
-	go g.dispatcher.Dispatch(NewCardPlayedEvent(minion))
+	go g.dispatcher.Dispatch(NewCardPlayedEvent(played))
 }
 
 func (g *Game) HandleAbilities(event GameEvent) bool {
-	if card, ok := event.GetData().(Card); ok {
+	if card, ok := event.GetData().(ActiveCard); ok {
 		g.mutex.Lock()
 		defer g.mutex.Unlock()
 
-		current := g.players[g.sockets[g.current]]
-
-		if minion, ok := card.(*ActiveMinion); ok {
-			if minion.HasAbility() {
-				ability := minion.Ability
-
-				if ability.Trigger != nil {
-					go g.dispatcher.Subscribe(ability.Trigger.Event, func(event GameEvent) bool {
-						if ability.Trigger.condition == nil || ability.Trigger.condition(minion, event) {
-							if event := minion.CastAbility(); event != nil {
-								go g.dispatcher.Dispatch(event)
-							}
+		if card.HasAbility() {
+			ability := card.GetAbility()
+			if ability.trigger != nil {
+				go g.dispatcher.Subscribe(ability.trigger.event, func(event GameEvent) bool {
+					if ability.trigger.condition == nil || ability.trigger.condition(card, event) {
+						if event := card.CastAbility(); event != nil {
+							go g.dispatcher.Dispatch(event)
 						}
-						// until it dies
-						return minion.GetHealth() <= 0
-					})
-				} else {
-					if event := minion.CastAbility(); event != nil {
-						go g.dispatcher.Dispatch(event)
 					}
+
+					// until it dies
+					minion, isMinion := card.(*ActiveMinion)
+					return !isMinion || minion.GetHealth() <= 0
+				})
+			} else {
+				if event := card.CastAbility(); event != nil {
+					go g.dispatcher.Dispatch(event)
 				}
 			}
-		} else if spell, ok := card.(*Spell); ok {
-			spell.Execute(current)
-		} else if spell, ok := card.(*TriggerableSpell); ok {
-			go g.dispatcher.Subscribe(spell.Trigger.Event, func(event GameEvent) bool {
-				if spell.Trigger.condition == nil || spell.Trigger.condition(spell, event) {
-					if event := spell.Execute(current); event != nil {
-						go g.dispatcher.Dispatch(event)
-					}
-				}
-				return true
-			})
 		}
 	}
 	return false

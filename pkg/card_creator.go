@@ -89,8 +89,7 @@ func CreateSpellCard(data CardData) (Card, error) {
 
 	spell := NewSpell(data.Name, data.Mana, ability)
 	if data.Ability.Trigger != "" {
-		trigger := CreateTrigger(data.Ability.Trigger)
-		return Trigerable(trigger, spell), nil
+		ability.SetTrigger(CreateTrigger(data.Ability.Trigger))
 	}
 
 	return spell, nil
@@ -111,135 +110,148 @@ func CreateAbility(data AbilityData) (*Ability, error) {
 	}
 
 	return &Ability{
-		Effect:  effect,
-		Trigger: CreateTrigger(data.Trigger),
+		effect:  effect,
+		trigger: CreateTrigger(data.Trigger),
 	}, nil
 }
 
 func CreateTrigger(identifier string) *Trigger {
 	var event GameEventType
-	var condition func(card Card, event GameEvent) bool
+	var description string
+	var condition func(card ActiveCard, event GameEvent) bool
 
 	switch identifier {
 	case "card_played":
 		event = CardPlayedEvent
-		condition = func(card Card, event GameEvent) bool {
-			// TODO: this won't work for spells
-			minion := card.(*ActiveMinion)
-			if played, ok := event.GetData().(*ActiveMinion); ok {
-				fmt.Printf("played: %v\n", played)
-				return minion.player == played.player
-			}
-			return false
+		description = "When you play a card"
+		condition = func(card ActiveCard, event GameEvent) bool {
+			played := event.GetData().(ActiveCard)
+			return card.GetPlayer() == played.GetPlayer()
 		}
 	case "opponent_card_played":
 		event = CardPlayedEvent
-		condition = func(card Card, event GameEvent) bool {
-			minion := card.(*ActiveMinion)
+		description = "When your opponent plays a card"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			played := event.GetData().(*ActiveMinion)
-			return minion.player != played.player
+			return card.GetPlayer() != played.GetPlayer()
 		}
 	case "turn_started":
 		event = TurnStartedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "At the start of your turn"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			data := event.GetData().(map[string]interface{})
 			return minion.player == data["Player"].(*Player)
 		}
 	case "opponent_turn_started":
 		event = TurnStartedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "At the start of your opponent's turn"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			data := event.GetData().(map[string]interface{})
 			return minion.player != data["Player"].(*Player)
 		}
 	case "mana_gained":
 		event = ManaGainedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When you gain mana"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			player := event.GetData().(*Player)
 			return minion.player == player
 		}
 	case "opponent_mana_gained":
 		event = ManaGainedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When your opponent gains mana"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			player := event.GetData().(*Player)
 			return minion.player != player
 		}
 	case "damage_increased":
 		event = DamageIncreasedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When this minion gain damage"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			return card == event.GetData().(Card)
 		}
 	case "allied_damage_increased":
 		event = DamageIncreasedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When an allied minion gains damage"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			affected := event.GetData().(*ActiveMinion)
 			return minion != affected && minion.player == affected.player
 		}
 	case "opponent_damage_increased":
 		event = DamageIncreasedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When an opponent minion gains damage"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			affected := event.GetData().(*ActiveMinion)
 			return minion.player != affected.player
 		}
 	case "minion_state_changed":
 		event = StateChangedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When this minion changes state"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			return card == event.GetData().(Card)
 		}
 	case "allied_minion_state_changed":
 		event = StateChangedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When an allied minion changes state"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			affected := event.GetData().(*ActiveMinion)
 			return affected != minion && minion.player == affected.player
 		}
 	case "opponent_minion_state_changed":
 		event = StateChangedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When an opponent minion changes state"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			affected := event.GetData().(*ActiveMinion)
 			return minion.player != affected.player
 		}
 	case "minion_destroyed":
 		event = MinionDestroyedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When this minion is destroyed"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			return card == event.GetData().(Card)
 		}
 	case "allied_minion_destroyed":
 		event = MinionDestroyedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When an allied minion is destroyed"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			destroyed := event.GetData().(*ActiveMinion)
 			return destroyed != minion && minion.player == destroyed.player
 		}
 	case "opponent_minion_destroyed":
 		event = MinionDestroyedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When an opponent minion is destroyed"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			destroyed := event.GetData().(*ActiveMinion)
 			return minion.player != destroyed.player
 		}
 	case "minion_damaged":
 		event = MinionDamagedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When this minion takes damage"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			payload := event.GetData().(MinionDamagedPayload)
 			return card == payload.Defender
 		}
 	case "allied_minion_damaged":
 		event = MinionDamagedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When an allied minion takes damage"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			payload := event.GetData().(MinionDamagedPayload)
 			return payload.Defender != card && minion.player == payload.Defender.player
 		}
 	case "opponent_minion_damaged":
 		event = MinionDamagedEvent
-		condition = func(card Card, event GameEvent) bool {
+		description = "When an opponent minion takes damage"
+		condition = func(card ActiveCard, event GameEvent) bool {
 			minion := card.(*ActiveMinion)
 			payload := event.GetData().(MinionDamagedPayload)
 			return minion.player != payload.Defender.player
@@ -249,7 +261,8 @@ func CreateTrigger(identifier string) *Trigger {
 	}
 
 	return &Trigger{
-		Event:     event,
-		condition: condition,
+		event:       event,
+		condition:   condition,
+		Description: description,
 	}
 }
