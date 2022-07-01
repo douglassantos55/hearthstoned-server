@@ -24,11 +24,15 @@ func (g *GainMana) GetDescription() string {
 }
 
 func (g *GainMana) SetTarget(target interface{}) {
-	g.player = target.(*Player)
+	if player, ok := target.(*Player); ok {
+		g.player = player
+	} else if card, ok := target.(ActiveCard); ok {
+		g.player = card.GetPlayer()
+	}
 }
 
 func (g *GainMana) Cast() GameEvent {
-	g.player.GainMana(g.amount)
+	g.player.AddMana(g.amount)
 
 	return &ManaGained{
 		Player: g.player,
@@ -69,7 +73,11 @@ func (d *DrawCard) GetDescription() string {
 }
 
 func (d *DrawCard) SetTarget(target interface{}) {
-	d.player = target.(*Player)
+	if player, ok := target.(*Player); ok {
+		d.player = player
+	} else if card, ok := target.(ActiveCard); ok {
+		d.player = card.GetPlayer()
+	}
 }
 
 func (d *DrawCard) Cast() GameEvent {

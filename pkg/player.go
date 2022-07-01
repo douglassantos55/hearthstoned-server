@@ -87,6 +87,9 @@ func (p *Player) RefillMana() {
 }
 
 func (p *Player) AddMana(qty int) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	p.Mana += qty
 	if p.Mana > p.MaxMana {
 		p.Mana = p.MaxMana

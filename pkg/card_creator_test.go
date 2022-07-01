@@ -56,10 +56,12 @@ func TestCreateSpell(t *testing.T) {
 	}
 
 	player := NewPlayer(NewTestSocket())
+	player.GainMana(10)
+
 	spell.Execute(player)
 
-	if player.GetTotalMana() != 4 {
-		t.Errorf("Expected %v total mana, got %v", 4, player.GetTotalMana())
+	if player.GetMana() != 4 {
+		t.Errorf("Expected %v total mana, got %v", 4, player.GetMana())
 	}
 }
 
@@ -946,6 +948,75 @@ func TestSpells(t *testing.T) {
 
 		if player.hand.Length() != 4 {
 			t.Errorf("Expected %v cards in hand, got %v", 4, player.hand.Length())
+		}
+	})
+
+	t.Run("draw cards as minion ability", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 1,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "draw_card",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "turn_started",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return false
+		})
+
+		dispatcher.Dispatch(NewTurnStartedEvent(player, time.Second))
+		dispatcher.Dispatch(NewTurnStartedEvent(player, time.Second))
+
+		if player.hand.Length() != 4 {
+			t.Errorf("Expected %v cards in hand, got %v", 4, player.hand.Length())
+		}
+	})
+
+	t.Run("gain mana as minion ability", func(t *testing.T) {
+		card, _ := CreateCard(CardData{
+			Type:   "minion",
+			Name:   "Crazy Shirtless Dude",
+			Mana:   1,
+			Damage: 1,
+			Health: 1,
+			Ability: AbilityData{
+				Type:    "gain_mana",
+				Params:  map[string]interface{}{"amount": 2.0},
+				Trigger: "minion_destroyed",
+			},
+		})
+
+		player := NewPlayer(NewTestSocket())
+		player.GainMana(10)
+
+		minion := NewMinion(card.(*Minion))
+		minion.SetPlayer(player)
+
+		dispatcher := NewGameDispatcher()
+		dispatcher.Subscribe(minion.Ability.trigger.event, func(event GameEvent) bool {
+			if minion.Ability.trigger.condition(minion, event) {
+				minion.CastAbility()
+			}
+			return true
+		})
+
+		dispatcher.Dispatch(NewDestroyedEvent(minion))
+
+		if player.GetMana() != 2 {
+			t.Errorf("Expected %v mana, got %v", 2, player.GetMana())
 		}
 	})
 }

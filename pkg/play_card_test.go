@@ -215,15 +215,17 @@ func TestMagicCard(t *testing.T) {
 	card := NewSpell("", 1, ability)
 
 	player := game.players[p1]
+	player.GainMana(10)
 	player.hand.Add(card)
 
+	player.GetMana()
 	game.PlayCard(card.GetId(), p1)
 
 	<-p1.Outgoing
 	<-p2.Outgoing
 
-	if player.GetTotalMana() != 3 {
-		t.Errorf("Expected %v mana, got %v", 3, player.GetTotalMana())
+	if player.GetMana() != 2 {
+		t.Errorf("Expected %v mana, got %v", 2, player.GetMana())
 	}
 }
 
@@ -238,7 +240,7 @@ func TestTriggeredSpell(t *testing.T) {
 	<-p2.Outgoing
 
 	ability := &Ability{
-		effect: GainManaEffect(1),
+		effect: &DrawCard{amount: 1},
 		trigger: &Trigger{
 			event: TurnStartedEvent,
 		},
@@ -265,60 +267,8 @@ func TestTriggeredSpell(t *testing.T) {
 	<-p2.Outgoing
 
 	// expect spell to cast
-	if player.GetMana() != 3 {
-		t.Errorf("Expected %v mana, got %v", 3, player.GetMana())
-	}
-}
-
-func TestTriggeredSpellOnce(t *testing.T) {
-	p1 := NewTestSocket()
-	p2 := NewTestSocket()
-
-	game := NewGame([]*Socket{p1, p2}, time.Second)
-	game.StartTurn()
-
-	<-p1.Outgoing
-	<-p2.Outgoing
-
-	ability := &Ability{
-		effect: GainManaEffect(1),
-		trigger: &Trigger{
-			event: TurnStartedEvent,
-		},
-	}
-	spell := NewSpell("", 1, ability)
-
-	// play a magic card with triggered spell
-	player := game.players[p1]
-	player.hand.Add(spell)
-	game.PlayCard(spell.GetId(), p1)
-
-	<-p1.Outgoing
-	<-p2.Outgoing
-
-	game.EndTurn() // p1 end turn
-
-	<-p1.Outgoing
-	<-p2.Outgoing
-
-	game.EndTurn() // p2 end turn
-
-	<-p1.Outgoing
-	<-p2.Outgoing
-
-	game.EndTurn() // p1 end turn
-
-	<-p1.Outgoing
-	<-p2.Outgoing
-
-	game.EndTurn() // p2 end turn
-
-	<-p1.Outgoing
-	<-p2.Outgoing
-
-	// expect spell to cast
-	if player.GetMana() != 4 {
-		t.Errorf("Expected %v mana, got %v", 4, player.GetMana())
+	if player.hand.Length() != 3 {
+		t.Errorf("Expected %v cards in hand, got %v", 3, player.hand.Length())
 	}
 }
 
@@ -333,6 +283,8 @@ func TestMagicFullBoard(t *testing.T) {
 
 	// fill board
 	player := game.players[p1]
+	player.GainMana(10)
+
 	for i := 0; i < 7; i++ {
 		minion := NewMinion(NewCard("", i, i, i))
 		minion.SetPlayer(player)
@@ -349,8 +301,8 @@ func TestMagicFullBoard(t *testing.T) {
 	<-p1.Outgoing
 	<-p2.Outgoing
 
-	if player.GetTotalMana() != 2 {
-		t.Errorf("expected %v mana, got %v", 2, player.GetTotalMana())
+	if player.GetMana() != 1 {
+		t.Errorf("expected %v mana, got %v", 1, player.GetMana())
 	}
 }
 
