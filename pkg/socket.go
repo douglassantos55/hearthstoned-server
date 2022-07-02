@@ -8,8 +8,9 @@ import (
 type Socket struct {
 	Id uuid.UUID
 
-	Outgoing chan Response // messages to client
-	Incoming chan Event    // messages from client
+	Outgoing   chan Response // messages to client
+	Incoming   chan Event    // messages from client
+	Disconnect chan bool
 
 	socket *websocket.Conn
 }
@@ -18,8 +19,9 @@ func NewSocket(conn *websocket.Conn) *Socket {
 	socket := &Socket{
 		Id: uuid.New(),
 
-		Incoming: make(chan Event),
-		Outgoing: make(chan Response),
+		Incoming:   make(chan Event),
+		Outgoing:   make(chan Response),
+		Disconnect: make(chan bool),
 
 		socket: conn,
 	}
@@ -34,8 +36,9 @@ func NewTestSocket() *Socket {
 	return &Socket{
 		Id: uuid.New(),
 
-		Incoming: make(chan Event),
-		Outgoing: make(chan Response),
+		Incoming:   make(chan Event),
+		Outgoing:   make(chan Response),
+		Disconnect: make(chan bool),
 	}
 }
 
@@ -52,6 +55,7 @@ func (s *Socket) Read() {
 		}
 		s.Incoming <- event
 	}
+	s.Disconnect <- true
 }
 
 func (s *Socket) Write() {

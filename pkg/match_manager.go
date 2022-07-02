@@ -56,13 +56,15 @@ func (m *MatchManager) Process(event Event) *Event {
 		}
 	case MatchConfirmed:
 		if matchId, err := uuid.Parse(event.Payload.(string)); err == nil {
-			event := m.ConfirmMatch(matchId, event.Player)
-			return event
+			return m.ConfirmMatch(matchId, event.Player)
 		}
 	case MatchDeclined:
 		if matchId, err := uuid.Parse(event.Payload.(string)); err == nil {
-			event := m.DeclineMatch(matchId)
-			return event
+			return m.CancelMatch(matchId)
+		}
+	case Disconnected:
+		if matchId, ok := m.FindPlayerMatch(event.Player); ok {
+			return m.CancelMatch(matchId)
 		}
 	}
 	return nil
@@ -101,9 +103,11 @@ func (m *MatchManager) StartTimer(matchId uuid.UUID) {
 	}
 }
 
-func (m *MatchManager) CancelMatch(matchId uuid.UUID) {
+func (m *MatchManager) CancelMatch(matchId uuid.UUID) *Event {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+
+	var event *Event
 
 	// find match
 	if match, ok := m.matches[matchId]; ok {
@@ -114,6 +118,19 @@ func (m *MatchManager) CancelMatch(matchId uuid.UUID) {
 		// remove match from map
 		delete(m.matches, matchId)
 	}
+
+	// return queue event for confirmed players
+	if confirmed, ok := m.confirmed[matchId]; ok {
+		event = &Event{
+			Type:   QueueUp,
+			Player: confirmed[0],
+		}
+	}
+
+	// remove confirmed from map
+	delete(m.confirmed, matchId)
+
+	return event
 }
 
 func (m *MatchManager) ConfirmMatch(matchId uuid.UUID, player *Socket) *Event {
@@ -144,19 +161,15 @@ func (m *MatchManager) ConfirmMatch(matchId uuid.UUID, player *Socket) *Event {
 	return nil
 }
 
-func (m *MatchManager) DeclineMatch(matchId uuid.UUID) *Event {
-	// cancel match
-	m.CancelMatch(matchId)
-
-	// return queue event for confirmed players
-	if confirmed, ok := m.confirmed[matchId]; ok {
-		return &Event{
-			Type:   QueueUp,
-			Player: confirmed[0],
+func (m *MatchManager) FindPlayerMatch(player *Socket) (uuid.UUID, bool) {
+	for matchId, players := range m.matches {
+		for _, socket := range players {
+			if socket == player {
+				return matchId, true
+			}
 		}
 	}
-
-	return nil
+	return uuid.Nil, false
 }
 
 func (m *MatchManager) MatchCount() int {

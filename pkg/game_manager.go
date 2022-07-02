@@ -84,6 +84,19 @@ func (g *GameManager) Process(event Event) *Event {
 				}
 			}
 		}
+	case Disconnected:
+		// check if disconnected player is playing
+		if game := g.FindPlayerGame(event.Player); game != nil {
+			game.Disconnect(event.Player)
+
+		}
+	case Reconnected:
+		// find game
+		if gameId, err := uuid.Parse(event.Payload.(string)); err == nil {
+			if game, ok := g.games[gameId]; ok {
+				game.Reconnect(event.Player)
+			}
+		}
 	}
 	return nil
 }
@@ -93,6 +106,15 @@ func (g *GameManager) CreateGame(players []*Socket) *Game {
 	g.games[game.Id] = game
 
 	return game
+}
+
+func (g *GameManager) FindPlayerGame(player *Socket) *Game {
+	for _, game := range g.games {
+		if game.HasPlayer(player) {
+			return game
+		}
+	}
+	return nil
 }
 
 func (g *GameManager) GameCount() int {

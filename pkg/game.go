@@ -10,8 +10,11 @@ import (
 const INITIAL_HAND_LENGTH = 3
 
 type Game struct {
-	Id           uuid.UUID
-	StopTimer    chan bool
+	Id          uuid.UUID
+	StopTimer   chan bool
+	Reconnected chan *Socket
+
+	disconnected *Player
 	turnDuration time.Duration
 	current      int
 	sockets      []*Socket
@@ -58,8 +61,10 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 	}
 
 	game := &Game{
-		Id:           uuid.New(),
-		StopTimer:    make(chan bool),
+		Id:          uuid.New(),
+		StopTimer:   make(chan bool),
+		Reconnected: make(chan *Socket),
+
 		turnDuration: turnDuration,
 		current:      -1,
 		sockets:      sockets,
@@ -139,6 +144,11 @@ func (g *Game) OtherPlayers() []*Player {
 		}
 	}
 	return players
+}
+
+func (g *Game) HasPlayer(player *Socket) bool {
+	_, exists := g.players[player]
+	return exists
 }
 
 func (g *Game) Discard(cardIds []uuid.UUID, socket *Socket) {
@@ -387,9 +397,60 @@ func (g *Game) GameOver(winner, loser *Player) {
 	})
 
 	// loser gets loss message
-	go loser.Send(Response{
-		Type: Loss,
-	})
+	if loser != nil {
+		go loser.Send(Response{
+			Type: Loss,
+		})
+	}
+}
+
+func (g *Game) Disconnect(player *Socket) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	// remove current socket
+	for i, socket := range g.sockets {
+		if socket == player {
+			g.disconnected = g.players[socket]
+			g.sockets = append(g.sockets[:i], g.sockets[i+1:]...)
+			break
+		}
+	}
+
+	// start a 30s timer
+	timer := time.NewTimer(300 * time.Millisecond)
+
+	go func() {
+		select {
+		case <-g.Reconnected:
+			if !timer.Stop() {
+				<-timer.C
+			}
+		case <-timer.C:
+			var winner *Player
+			loser := g.players[player]
+			for _, player := range g.players {
+				if player != loser {
+					winner = player
+				}
+			}
+			g.GameOver(winner, nil)
+		}
+	}()
+}
+
+func (g *Game) Reconnect(socket *Socket) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	// replace disconnect player with new player
+	g.sockets = append(g.sockets, socket)
+	g.players[socket] = g.disconnected
+
+	// send the new player game data
+
+	// stop timer
+	g.Reconnected <- socket
 }
 
 // Searches for a minion on all players board, except current player

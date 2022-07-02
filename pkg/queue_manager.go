@@ -33,7 +33,7 @@ func (q *QueueManager) Process(event Event) *Event {
 			event := q.PrepareMatch()
 			return &event
 		}
-	case Dequeue:
+	case Dequeue, Disconnected:
 		q.RemoveFromQueue(event.Player)
 	}
 	return nil

@@ -30,6 +30,8 @@ const (
 	PlayCard       EventType = "play_card"
 	Attack         EventType = "attack"
 	AttackPlayer   EventType = "attack_player"
+	Disconnected   EventType = "disconnected"
+	Reconnected    EventType = "reconnected"
 )
 
 type Response struct {

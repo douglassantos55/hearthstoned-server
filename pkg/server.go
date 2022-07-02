@@ -7,6 +7,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+func NewDisconnected(player *Socket) Event {
+	return Event{
+		Type:   Disconnected,
+		Player: player,
+	}
+}
+
 type Server struct {
 	handlers []EventHandler
 	upgrader websocket.Upgrader
@@ -17,6 +24,11 @@ func NewServer() *Server {
 		handlers: make([]EventHandler, 0),
 		upgrader: websocket.Upgrader{},
 	}
+}
+
+func (s *Server) Listen(addr string) {
+	http.HandleFunc("/", s.HandleConnection)
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
 func (s *Server) RegisterHandler(handler EventHandler) {
@@ -44,6 +56,9 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 			case event := <-socket.Incoming:
 				event.Player = socket
 				s.ProcessEvent(event)
+			case <-socket.Disconnect:
+				s.ProcessEvent(NewDisconnected(socket))
+				return
 			}
 		}
 	}()
