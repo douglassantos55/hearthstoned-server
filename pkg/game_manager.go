@@ -8,12 +8,14 @@ import (
 )
 
 type GameManager struct {
-	games map[uuid.UUID]*Game
+	games      map[uuid.UUID]*Game
+	disconnect time.Duration
 }
 
-func NewGameManager() *GameManager {
+func NewGameManager(duration time.Duration) *GameManager {
 	return &GameManager{
-		games: make(map[uuid.UUID]*Game),
+		disconnect: duration,
+		games:      make(map[uuid.UUID]*Game),
 	}
 }
 
@@ -87,7 +89,7 @@ func (g *GameManager) Process(event Event) *Event {
 	case Disconnected:
 		// check if disconnected player is playing
 		if game := g.FindPlayerGame(event.Player); game != nil {
-			game.Disconnect(event.Player)
+			game.Disconnect(event.Player, g.disconnect)
 
 		}
 	case Reconnected:

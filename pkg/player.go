@@ -3,7 +3,6 @@ package pkg
 import (
 	"container/list"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -162,7 +161,6 @@ func (p *Player) CardsOnBoardCount() int {
 
 func (p *Player) NotifyDamage(event GameEvent) bool {
 	payload := event.GetData().(MinionDamagedPayload)
-	fmt.Printf("p.Id: %v\n", p.Id)
 	p.Send(Response{
 		Type:    MinionDamageTaken,
 		Payload: payload,

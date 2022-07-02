@@ -14,7 +14,7 @@ type Game struct {
 	StopTimer   chan bool
 	Reconnected chan *Socket
 
-	disconnected *Player
+	disconnected int
 	turnDuration time.Duration
 	current      int
 	sockets      []*Socket
@@ -66,6 +66,7 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 		Reconnected: make(chan *Socket),
 
 		turnDuration: turnDuration,
+		disconnected: -1,
 		current:      -1,
 		sockets:      sockets,
 		players:      players,
@@ -404,21 +405,19 @@ func (g *Game) GameOver(winner, loser *Player) {
 	}
 }
 
-func (g *Game) Disconnect(player *Socket) {
+func (g *Game) Disconnect(player *Socket, duration time.Duration) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	// remove current socket
-	for i, socket := range g.sockets {
+	for idx, socket := range g.sockets {
 		if socket == player {
-			g.disconnected = g.players[socket]
-			g.sockets = append(g.sockets[:i], g.sockets[i+1:]...)
+			g.disconnected = idx
 			break
 		}
 	}
 
 	// start a 30s timer
-	timer := time.NewTimer(300 * time.Millisecond)
+	timer := time.NewTimer(duration)
 
 	go func() {
 		select {
@@ -443,14 +442,21 @@ func (g *Game) Reconnect(socket *Socket) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	// replace disconnect player with new player
-	g.sockets = append(g.sockets, socket)
-	g.players[socket] = g.disconnected
-
-	// send the new player game data
-
 	// stop timer
 	g.Reconnected <- socket
+
+	// remove old references
+	disconnected := g.sockets[g.disconnected]
+	delete(g.players, disconnected)
+	g.sockets = append(g.sockets[:g.disconnected], g.sockets[g.disconnected+1:]...)
+
+	g.disconnected = -1
+
+	// replace disconnect player with new player
+	g.sockets = append(g.sockets, socket)
+	g.players[socket] = g.players[disconnected]
+
+	// TODO: send the new player game data
 }
 
 // Searches for a minion on all players board, except current player

@@ -20,7 +20,7 @@ func PlayCardEvent(player *Socket, gameId, cardId uuid.UUID) Event {
 }
 
 func TestPlayCard(t *testing.T) {
-	manager := NewGameManager()
+	manager := NewGameManager(time.Second)
 
 	// create game
 	p1 := NewTestSocket()

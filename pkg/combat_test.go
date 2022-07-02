@@ -7,7 +7,7 @@ import (
 
 func TestCombat(t *testing.T) {
 	t.Run("attack minion", func(t *testing.T) {
-		manager := NewGameManager()
+		manager := NewGameManager(time.Second)
 
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
@@ -169,7 +169,7 @@ func TestCombat(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
 
-		manager := NewGameManager()
+		manager := NewGameManager(time.Second)
 		game := manager.CreateGame([]*Socket{p1, p2})
 
 		player := game.players[p2]
@@ -240,7 +240,7 @@ func TestCombat(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
 
-		manager := NewGameManager()
+		manager := NewGameManager(time.Second)
 		game := manager.CreateGame([]*Socket{p1, p2})
 
 		player := game.players[p2]
@@ -272,7 +272,7 @@ func TestCombat(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
 
-		manager := NewGameManager()
+		manager := NewGameManager(time.Second)
 		game := manager.CreateGame([]*Socket{p1, p2})
 
 		player := game.players[p2]

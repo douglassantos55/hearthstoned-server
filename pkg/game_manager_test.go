@@ -30,7 +30,7 @@ func TestGameManager(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
 
-		manager := NewGameManager()
+		manager := NewGameManager(time.Second)
 
 		// process create game event
 		manager.Process(CreateGameEvent([]*Socket{p1, p2}))
@@ -80,7 +80,7 @@ func TestGameManager(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
 
-		manager := NewGameManager()
+		manager := NewGameManager(time.Second)
 
 		// create game
 		manager.Process(CreateGameEvent([]*Socket{p1, p2}))
@@ -131,7 +131,7 @@ func TestGameManager(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
 
-		manager := NewGameManager()
+		manager := NewGameManager(time.Second)
 
 		// create and start game
 		game := manager.CreateGame([]*Socket{p1, p2})
@@ -222,7 +222,7 @@ func TestGameManager(t *testing.T) {
 	})
 
 	t.Run("start turn when both ready", func(t *testing.T) {
-		manager := NewGameManager()
+		manager := NewGameManager(time.Second)
 
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
@@ -336,7 +336,7 @@ func TestGameManager(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
 
-		manager := NewGameManager()
+		manager := NewGameManager(500 * time.Millisecond)
 
 		// create a game
 		game := manager.CreateGame([]*Socket{p1, p2})
@@ -366,7 +366,7 @@ func TestGameManager(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
 
-		manager := NewGameManager()
+		manager := NewGameManager(500 * time.Millisecond)
 
 		// create a game
 		game := manager.CreateGame([]*Socket{p1, p2})
