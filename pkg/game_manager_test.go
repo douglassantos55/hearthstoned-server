@@ -394,5 +394,16 @@ func TestGameManager(t *testing.T) {
 		case response := <-p1.Outgoing:
 			t.Errorf("Expected no response, got %v", response)
 		}
+
+		select {
+		case response := <-p2.Outgoing:
+			if response.Type != "reconnected" {
+				t.Errorf("Expected %v, got %v", "reconnected", response.Type)
+			}
+			payload := response.Payload.(map[string]interface{})
+			if payload["Time"].(time.Duration) < 70*time.Second {
+				t.Errorf("Expected more than 70s left, got %v", payload["Time"])
+			}
+		}
 	})
 }

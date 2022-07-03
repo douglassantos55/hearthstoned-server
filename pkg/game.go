@@ -9,12 +9,57 @@ import (
 
 const INITIAL_HAND_LENGTH = 3
 
+type Timer struct {
+	mutex    *sync.Mutex
+	timer    *time.Timer
+	start    time.Time
+	duration time.Duration
+}
+
+func NewTimer() *Timer {
+	timer := time.NewTimer(time.Second)
+	timer.Stop()
+
+	return &Timer{
+		timer: timer,
+		mutex: new(sync.Mutex),
+	}
+}
+
+func (t *Timer) Start(duration time.Duration) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	t.start = time.Now()
+	t.duration = duration
+	t.timer.Reset(duration)
+}
+
+func (t *Timer) Stop() {
+	if !t.timer.Stop() {
+		<-t.timer.C
+	}
+}
+
+func (t *Timer) Done() <-chan time.Time {
+	return t.timer.C
+}
+
+func (t *Timer) Left() time.Duration {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	ellapsed := time.Since(t.start).Nanoseconds()
+	return time.Duration(t.duration.Nanoseconds() - ellapsed)
+}
+
 type Game struct {
 	Id          uuid.UUID
 	StopTimer   chan bool
 	Reconnected chan *Socket
 
 	disconnected int
+	timer        *Timer
 	turnDuration time.Duration
 	current      int
 	sockets      []*Socket
@@ -65,6 +110,7 @@ func NewGame(sockets []*Socket, turnDuration time.Duration) *Game {
 		StopTimer:   make(chan bool),
 		Reconnected: make(chan *Socket),
 
+		timer:        NewTimer(),
 		turnDuration: turnDuration,
 		disconnected: -1,
 		current:      -1,
@@ -96,14 +142,12 @@ func (g *Game) ChooseStartingHand(duration time.Duration) {
 }
 
 func (g *Game) StartTimer(duration time.Duration) {
-	timer := time.NewTimer(duration)
+	g.timer.Start(duration)
 
 	select {
 	case <-g.StopTimer:
-		if !timer.Stop() {
-			<-timer.C
-		}
-	case <-timer.C:
+		g.timer.Stop()
+	case <-g.timer.Done():
 		// change game state to avoid discarding again?
 		g.StartTurn()
 	}
@@ -137,10 +181,10 @@ func (g *Game) NextPlayer() *Player {
 	return g.players[g.sockets[g.current]]
 }
 
-func (g *Game) OtherPlayers() []*Player {
+func (g *Game) OtherPlayers(current *Socket) []*Player {
 	players := []*Player{}
 	for _, socket := range g.sockets {
-		if socket != g.sockets[g.current] {
+		if socket != current {
 			players = append(players, g.players[socket])
 		}
 	}
@@ -445,23 +489,32 @@ func (g *Game) Reconnect(socket *Socket) {
 	// stop timer
 	g.Reconnected <- socket
 
-	// remove old references
+	// grab reference to disconnected socket
 	disconnected := g.sockets[g.disconnected]
-	delete(g.players, disconnected)
-	g.sockets = append(g.sockets[:g.disconnected], g.sockets[g.disconnected+1:]...)
-
-	g.disconnected = -1
 
 	// replace disconnect player with new player
-	g.sockets = append(g.sockets, socket)
+	g.sockets[g.disconnected] = socket
 	g.players[socket] = g.players[disconnected]
 
-	// TODO: send the new player game data
+	// send the new player game data
+	go socket.Send(Response{
+		Type: "reconnected",
+		Payload: map[string]interface{}{
+			"Playing":   g.current == g.disconnected,
+			"Time":      g.timer.Left(),
+			"Player":    g.players[socket],
+			"Opponents": g.OtherPlayers(socket),
+		},
+	})
+
+	delete(g.players, disconnected)
+	g.disconnected = -1
 }
 
 // Searches for a minion on all players board, except current player
 func (g *Game) FindMinion(minionId uuid.UUID) (*ActiveMinion, *Player) {
-	for _, player := range g.OtherPlayers() {
+	current := g.sockets[g.current]
+	for _, player := range g.OtherPlayers(current) {
 		if minion, ok := player.board.GetMinion(minionId); ok {
 			return minion, player
 		}
