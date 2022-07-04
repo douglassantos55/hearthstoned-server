@@ -946,8 +946,8 @@ func TestSpells(t *testing.T) {
 		spell.SetPlayer(player)
 		spell.CastAbility()
 
-		if player.hand.Length() != 4 {
-			t.Errorf("Expected %v cards in hand, got %v", 4, player.hand.Length())
+		if player.Hand.Length() != 4 {
+			t.Errorf("Expected %v cards in hand, got %v", 4, player.Hand.Length())
 		}
 	})
 
@@ -980,8 +980,8 @@ func TestSpells(t *testing.T) {
 		dispatcher.Dispatch(NewTurnStartedEvent(player, time.Second))
 		dispatcher.Dispatch(NewTurnStartedEvent(player, time.Second))
 
-		if player.hand.Length() != 4 {
-			t.Errorf("Expected %v cards in hand, got %v", 4, player.hand.Length())
+		if player.Hand.Length() != 4 {
+			t.Errorf("Expected %v cards in hand, got %v", 4, player.Hand.Length())
 		}
 	})
 

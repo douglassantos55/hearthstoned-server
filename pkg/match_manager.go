@@ -125,10 +125,9 @@ func (m *MatchManager) CancelMatch(matchId uuid.UUID) *Event {
 			Type:   QueueUp,
 			Player: confirmed[0],
 		}
+		// remove confirmed from map
+		delete(m.confirmed, matchId)
 	}
-
-	// remove confirmed from map
-	delete(m.confirmed, matchId)
 
 	return event
 }

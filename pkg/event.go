@@ -73,12 +73,13 @@ type CardDiscardedPayload struct {
 }
 
 type TurnPayload struct {
-	PlayerId    uuid.UUID     `json:"player_id,omitempty"`
-	Mana        int           `json:"mana"`
-	Duration    time.Duration `json:"duration"`
-	CardsInHand int           `json:"cards_in_hand,omitempty"`
-	Cards       []Card        `json:"cards,omitempty"`
-	OpponentId  uuid.UUID     `json:"opponent_id,omitempty"`
+	PlayerId    uuid.UUID                   `json:"player_id,omitempty"`
+	Mana        int                         `json:"mana"`
+	Board       map[uuid.UUID]*ActiveMinion `json:"board"`
+	Duration    time.Duration               `json:"duration"`
+	CardsInHand int                         `json:"cards_in_hand,omitempty"`
+	Cards       []Card                      `json:"cards,omitempty"`
+	OpponentId  uuid.UUID                   `json:"opponent_id,omitempty"`
 }
 
 type PlayCardPayload struct {

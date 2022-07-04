@@ -36,9 +36,10 @@ func (t *Timer) Start(duration time.Duration) {
 }
 
 func (t *Timer) Stop() {
-	if !t.timer.Stop() {
-		<-t.timer.C
-	}
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	t.timer.Stop()
 }
 
 func (t *Timer) Done() <-chan time.Time {
@@ -162,7 +163,7 @@ func (g *Game) StartTurn() {
 	current.GainMana(1)
 	current.RefillMana()
 
-	for _, minion := range current.board.ActivateAll() {
+	for _, minion := range current.Board.ActivateAll() {
 		go g.dispatcher.Dispatch(NewStateChangedEvent(minion))
 	}
 
@@ -246,7 +247,7 @@ func (g *Game) PlayCard(cardId uuid.UUID, socket *Socket) {
 	current := g.players[socket]
 
 	// check if card exists on player's hand
-	card := current.hand.Find(cardId)
+	card := current.Hand.Find(cardId)
 	if card == nil {
 		go current.Send(Response{
 			Type:    Error,
@@ -320,7 +321,7 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 	current := g.players[socket]
 
 	// check if attacker exists in attacking player's board
-	if attacker, ok := current.board.GetMinion(attackerId); ok {
+	if attacker, ok := current.Board.GetMinion(attackerId); ok {
 		if attacker.CanAttack() {
 			// check if defender exists in defending player's board
 			if defender, player := g.FindMinion(defenderId); defender != nil {
@@ -340,7 +341,7 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 
 						if !attackerSurvived {
 							// remove from its board
-							current.board.Remove(attacker)
+							current.Board.Remove(attacker)
 
 							// send minion destroyed message to players
 							g.dispatcher.Dispatch(NewDestroyedEvent(attacker))
@@ -353,7 +354,7 @@ func (g *Game) Attack(attackerId, defenderId uuid.UUID, socket *Socket) {
 					}
 				} else {
 					// remove from its board
-					player.board.Remove(defender)
+					player.Board.Remove(defender)
 
 					// send minion destroyed message to players
 					g.dispatcher.Dispatch(NewDestroyedEvent(defender))
@@ -399,9 +400,9 @@ func (g *Game) AttackPlayer(attackerId, playerId uuid.UUID, socket *Socket) bool
 	}
 
 	// check if player has minions on board
-	if player.board.MinionsCount() == 0 {
+	if player.Board.MinionsCount() == 0 {
 		// get minion
-		attacker, ok := current.board.GetMinion(attackerId)
+		attacker, ok := current.Board.GetMinion(attackerId)
 		if !ok {
 			go current.Send(Response{
 				Type:    Error,
@@ -491,21 +492,24 @@ func (g *Game) Reconnect(socket *Socket) {
 
 	// grab reference to disconnected socket
 	disconnected := g.sockets[g.disconnected]
+	g.sockets[g.disconnected] = socket
 
 	// replace disconnect player with new player
-	g.sockets[g.disconnected] = socket
-	g.players[socket] = g.players[disconnected]
+	player := g.players[disconnected]
+	player.socket = socket
+	g.players[socket] = player
 
 	// send the new player game data
-	go socket.Send(Response{
+	socket.Send(Response{
 		Type: "reconnected",
 		Payload: map[string]interface{}{
-			"Playing":   g.current == g.disconnected,
-			"Time":      g.timer.Left(),
-			"Player":    g.players[socket],
-			"Opponents": g.OtherPlayers(socket),
+			"Player":   g.players[socket],
+			"Opponent": g.OtherPlayers(socket)[0],
 		},
 	})
+
+	current := g.players[g.sockets[g.current]]
+	player.NotifyTurnStarted(NewTurnStartedEvent(current, g.timer.Left()))
 
 	delete(g.players, disconnected)
 	g.disconnected = -1
@@ -515,9 +519,23 @@ func (g *Game) Reconnect(socket *Socket) {
 func (g *Game) FindMinion(minionId uuid.UUID) (*ActiveMinion, *Player) {
 	current := g.sockets[g.current]
 	for _, player := range g.OtherPlayers(current) {
-		if minion, ok := player.board.GetMinion(minionId); ok {
+		if minion, ok := player.Board.GetMinion(minionId); ok {
 			return minion, player
 		}
 	}
 	return nil, nil
+}
+
+func (g *Game) GetPlayers() map[*Socket]*Player {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	return g.players
+}
+
+func (g *Game) GetSockets() []*Socket {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	return g.sockets
 }

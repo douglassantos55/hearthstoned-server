@@ -46,8 +46,8 @@ func TestPlayCard(t *testing.T) {
 	manager.Process(PlayCardEvent(p1, game.Id, played.Id))
 
 	player := game.players[p1]
-	if player.hand.Length() != 3 {
-		t.Errorf("Expected %v cards in hand, got %v", 3, player.hand.Length())
+	if player.Hand.Length() != 3 {
+		t.Errorf("Expected %v cards in hand, got %v", 3, player.Hand.Length())
 	}
 
 	select {
@@ -113,7 +113,7 @@ func TestNotEnoughMana(t *testing.T) {
 		}
 	}
 
-	card := game.players[p1].hand.Find(played.GetId())
+	card := game.players[p1].Hand.Find(played.GetId())
 	if card == nil {
 		t.Error("Expected card in hand")
 	}
@@ -175,7 +175,7 @@ func TestPlacesOnBoard(t *testing.T) {
 	}
 
 	// expect minion to start exhausted
-	state := player.board.minions[card.Id].GetState()
+	state := player.Board.Minions[card.Id].GetState()
 	if !reflect.DeepEqual(state, Exhausted{}) {
 		t.Error("expected minion to start exhausted")
 	}
@@ -216,7 +216,7 @@ func TestMagicCard(t *testing.T) {
 
 	player := game.players[p1]
 	player.GainMana(10)
-	player.hand.Add(card)
+	player.Hand.Add(card)
 
 	player.GetMana()
 	game.PlayCard(card.GetId(), p1)
@@ -249,7 +249,7 @@ func TestTriggeredSpell(t *testing.T) {
 
 	// play a magic card with triggered spell
 	player := game.players[p1]
-	player.hand.Add(spell)
+	player.Hand.Add(spell)
 
 	game.PlayCard(spell.GetId(), p1)
 
@@ -267,8 +267,8 @@ func TestTriggeredSpell(t *testing.T) {
 	<-p2.Outgoing
 
 	// expect spell to cast
-	if player.hand.Length() != 3 {
-		t.Errorf("Expected %v cards in hand, got %v", 3, player.hand.Length())
+	if player.Hand.Length() != 3 {
+		t.Errorf("Expected %v cards in hand, got %v", 3, player.Hand.Length())
 	}
 }
 
@@ -288,12 +288,12 @@ func TestMagicFullBoard(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		minion := NewMinion(NewCard("", i, i, i))
 		minion.SetPlayer(player)
-		player.board.Place(minion)
+		player.Board.Place(minion)
 	}
 
 	// play magic card
 	spell := NewSpell("", 1, &Ability{effect: GainManaEffect(1)})
-	player.hand.Add(spell)
+	player.Hand.Add(spell)
 
 	// expect it to cast normally
 	game.PlayCard(spell.GetId(), p1)
@@ -321,7 +321,7 @@ func TestMinionAbility(t *testing.T) {
 
 	// play the minion
 	player := game.players[p1]
-	player.hand.Add(minion)
+	player.Hand.Add(minion)
 
 	game.StartTurn()
 
@@ -371,7 +371,7 @@ func TestTriggerableMinionAbility(t *testing.T) {
 
 	// play the minion
 	player := game.players[p1]
-	player.hand.Add(minion)
+	player.Hand.Add(minion)
 
 	game.PlayCard(minion.GetId(), p1)
 

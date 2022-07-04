@@ -21,8 +21,8 @@ type Player struct {
 	MaxMana int
 
 	mutex  *sync.Mutex
-	board  *Board
-	hand   *Hand
+	Board  *Board
+	Hand   *Hand
 	deck   *Deck
 	socket *Socket
 }
@@ -36,10 +36,10 @@ func NewPlayer(socket *Socket) *Player {
 		Health:  MAX_HEALTH,
 
 		mutex:  new(sync.Mutex),
-		board:  NewBoard(),
+		Board:  NewBoard(),
 		deck:   NewDeck(),
 		socket: socket,
-		hand:   NewHand(list.New()),
+		Hand:   NewHand(list.New()),
 	}
 }
 
@@ -51,7 +51,7 @@ func (p *Player) DrawCards(qty int) []Card {
 	cards := p.deck.Draw(qty)
 	for cur := cards.Front(); cur != nil; cur = cur.Next() {
 		card := cur.Value.(Card)
-		p.hand.Add(card)
+		p.Hand.Add(card)
 		out = append(out, card)
 	}
 	return out
@@ -65,13 +65,13 @@ func (p *Player) GetHand() *Hand {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	return p.hand
+	return p.Hand
 }
 
 func (p *Player) Discard(cardId uuid.UUID) Card {
-	card := p.hand.Find(cardId)
+	card := p.Hand.Find(cardId)
 	if card != nil {
-		p.hand.Remove(card)
+		p.Hand.Remove(card)
 	}
 	return card
 }
@@ -145,7 +145,7 @@ func (p *Player) PlayCard(card Card) (ActiveCard, error) {
 	// add card to player's board
 	if minion, ok := card.(*Minion); ok {
 		played = NewMinion(minion)
-		if err := p.board.Place(played.(*ActiveMinion)); err != nil {
+		if err := p.Board.Place(played.(*ActiveMinion)); err != nil {
 			return nil, err
 		}
 	} else {
@@ -156,7 +156,7 @@ func (p *Player) PlayCard(card Card) (ActiveCard, error) {
 }
 
 func (p *Player) CardsOnBoardCount() int {
-	return p.board.MinionsCount()
+	return p.Board.MinionsCount()
 }
 
 func (p *Player) NotifyDamage(event GameEvent) bool {
@@ -228,9 +228,10 @@ func (p *Player) NotifyTurnStarted(event GameEvent) bool {
 			Payload: TurnPayload{
 				PlayerId:    player.Id,
 				Duration:    duration,
-				Cards:       player.hand.GetCards(),
+				Board:       player.Board.Minions,
+				Cards:       player.Hand.GetCards(),
 				Mana:        player.GetMana(),
-				CardsInHand: player.hand.Length(),
+				CardsInHand: player.Hand.Length(),
 			},
 		})
 	} else {
@@ -239,8 +240,9 @@ func (p *Player) NotifyTurnStarted(event GameEvent) bool {
 			Payload: TurnPayload{
 				OpponentId:  player.Id,
 				Mana:        player.GetMana(),
+				Board:       player.Board.Minions,
 				Duration:    duration,
-				CardsInHand: player.hand.Length(),
+				CardsInHand: player.Hand.Length(),
 			},
 		})
 	}
@@ -248,39 +250,39 @@ func (p *Player) NotifyTurnStarted(event GameEvent) bool {
 }
 
 type Board struct {
-	minions map[uuid.UUID]*ActiveMinion
+	Minions map[uuid.UUID]*ActiveMinion
 }
 
 func NewBoard() *Board {
 	return &Board{
-		minions: make(map[uuid.UUID]*ActiveMinion),
+		Minions: make(map[uuid.UUID]*ActiveMinion),
 	}
 }
 
 func (b *Board) MinionsCount() int {
-	return len(b.minions)
+	return len(b.Minions)
 }
 
 func (b *Board) GetMinion(minionId uuid.UUID) (*ActiveMinion, bool) {
-	minion, ok := b.minions[minionId]
+	minion, ok := b.Minions[minionId]
 	return minion, ok
 }
 
 func (b *Board) Remove(minion *ActiveMinion) {
-	delete(b.minions, minion.Id)
+	delete(b.Minions, minion.Id)
 }
 
 func (b *Board) Place(card *ActiveMinion) error {
 	if b.MinionsCount() == MAX_MINIONS {
 		return errors.New("Cannot place minion, board is full")
 	}
-	b.minions[card.Id] = card
+	b.Minions[card.Id] = card
 	return nil
 }
 
 func (b *Board) ActivateAll() map[uuid.UUID]*ActiveMinion {
-	for _, minion := range b.minions {
+	for _, minion := range b.Minions {
 		minion.SetState(Active{})
 	}
-	return b.minions
+	return b.Minions
 }

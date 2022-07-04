@@ -90,7 +90,6 @@ func (g *GameManager) Process(event Event) *Event {
 		// check if disconnected player is playing
 		if game := g.FindPlayerGame(event.Player); game != nil {
 			game.Disconnect(event.Player, g.disconnect)
-
 		}
 	case Reconnected:
 		// find game

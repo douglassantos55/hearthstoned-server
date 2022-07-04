@@ -365,6 +365,7 @@ func TestGameManager(t *testing.T) {
 	t.Run("reconnect", func(t *testing.T) {
 		p1 := NewTestSocket()
 		p2 := NewTestSocket()
+		p3 := NewTestSocket()
 
 		manager := NewGameManager(500 * time.Millisecond)
 
@@ -375,13 +376,16 @@ func TestGameManager(t *testing.T) {
 		<-p1.Outgoing // start turn
 		<-p2.Outgoing // wait turn
 
+		players := game.GetPlayers()
+		disconnected := players[p2]
+
 		// disconnect
 		manager.Process(NewDisconnected(p2))
 
 		// reconnect before timer runs out
-		manager.Process(Event{
+		go manager.Process(Event{
 			Type:    Reconnected,
-			Player:  p2,
+			Player:  p3,
 			Payload: game.Id.String(),
 		})
 
@@ -396,14 +400,29 @@ func TestGameManager(t *testing.T) {
 		}
 
 		select {
-		case response := <-p2.Outgoing:
+		case response := <-p3.Outgoing:
 			if response.Type != "reconnected" {
 				t.Errorf("Expected %v, got %v", "reconnected", response.Type)
 			}
-			payload := response.Payload.(map[string]interface{})
-			if payload["Time"].(time.Duration) < 70*time.Second {
-				t.Errorf("Expected more than 70s left, got %v", payload["Time"])
+		}
+
+		sockets := game.GetSockets()
+		if len(sockets) != 2 {
+			t.Errorf("Expected %v sockets, got %v", 2, len(game.sockets))
+		}
+		for _, socket := range sockets {
+			if socket == p2 {
+				t.Error("socket should have been removed")
 			}
+		}
+		if len(players) != 2 {
+			t.Errorf("Expected %v players, got %v", 2, len(game.sockets))
+		}
+		if players[p2] != nil {
+			t.Error("player for this socket should not exist")
+		}
+		if players[p3] != disconnected {
+			t.Errorf("Expected same player %v, got %v", disconnected, players[p3])
 		}
 	})
 }
